@@ -1,0 +1,27 @@
+{
+  "name": "whatsapp-bot",
+  "version": "1.0.0",
+  "description": "A complete WhatsApp bot with commands, polls, and XP system",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "node bot.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.6.0",
+    "pino": "^8.17.2",
+    "node-fetch": "^2.7.0",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "baileys",
+    "commands"
+  ],
+  "author": "BIG TENNET",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+} 
