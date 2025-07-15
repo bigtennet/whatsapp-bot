@@ -2029,7 +2029,7 @@ async function handleCrypto(sock, msg, coin) {
 
 async function handleWordDay(sock, msg) {
     try {
-        const response = await fetch('https://api.wordnik.com/v4/words.json/wordOfTheDay?api_key=a2a73e7b926c924fad7001ca3111acd55af2ffabf50eb4ae5');
+        const response = await fetch('https://api.wordnik.com/v4/words.json/wordOfTheDay?api_key=' + (process.env.WORDNIK_API_KEY || ''));
         const data = await response.json();
         
         await reply(sock, msg, `${BOT_STYLES.header}📚 *WORD OF THE DAY*\n${BOT_STYLES.divider}\n\n📖 *Word:* ${data.word}\n📝 *Definition:* ${data.definitions?.[0]?.text || 'No definition available'}\n📅 *Date:* ${data.publishDate}\n\n💡 *Example:* ${data.examples?.[0]?.text || 'No example available'}\n\n💫 *Get tomorrow's word with:* \`!wordday\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
