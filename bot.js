@@ -1710,6 +1710,19 @@ async function handleMessage(sock, msg) {
         
         console.log(`🔧 Processing command: ${cmd} in ${isGroup ? 'Group' : 'Private'} chat`);
         
+        // Special debug command that bypasses permissions
+        if (cmd.toLowerCase() === '!debugid') {
+            console.log('🔍 SPECIAL DEBUG ID command detected!');
+            const userId = msg.key.participant || msg.key.remoteJid;
+            const sudoData = loadSudoUsers();
+            const botOwner = sudoData.bot_owner;
+            const globalSudoUsers = sudoData.global_sudo_users;
+            
+            const debugInfo = `🔍 *SPECIAL DEBUG - ID COMPARISON*\n\n👤 *Your WhatsApp ID:* ${userId}\n👑 *Bot Owner ID:* ${botOwner}\n🔓 *Global Sudo Users:*\n${globalSudoUsers.map(u => `• ${u}`).join('\n')}\n\n🔍 *Exact Comparisons:*\n• Your ID === Bot Owner: ${userId === botOwner}\n• Your ID in Global Sudo: ${globalSudoUsers.includes(userId)}\n• Your ID length: ${userId.length}\n• Bot Owner length: ${botOwner.length}\n\n💡 *This command bypasses permissions for debugging*`;
+            await reply(sock, msg, debugInfo);
+            return;
+        }
+        
         // Check if user can use the bot (bot owner or sudo user)
         const userId = msg.key.participant || msg.key.remoteJid;
         const groupId = isGroup ? msg.key.remoteJid : null;
@@ -1741,6 +1754,19 @@ async function handleMessage(sock, msg) {
             const userId = msg.key.participant || msg.key.remoteJid;
             const sudoData = loadSudoUsers();
             const debugInfo = `🐛 *Debug Info*\n\n📱 *Chat Type:* ${isGroup ? 'Group' : 'Private'}\n👤 *From:* ${msg.key.remoteJid}\n👤 *User ID:* ${userId}\n💬 *Command:* ${cmd}\n🔧 *Args:* ${args.join(', ')}\n⏰ *Time:* ${new Date().toISOString()}\n\n🔐 *Permission Debug:*\n• Bot Owner: ${sudoData.bot_owner}\n• Is Bot Owner: ${isBotOwner(userId)}\n• Is Global Sudo: ${isGlobalSudoUser(userId)}\n• Global Sudo Users: ${sudoData.global_sudo_users.join(', ')}`;
+            await reply(sock, msg, debugInfo);
+            return;
+        }
+        
+        // Special debug command that bypasses permissions
+        if (cmd.toLowerCase() === '!debugid') {
+            console.log('🔍 SPECIAL DEBUG ID command detected!');
+            const userId = msg.key.participant || msg.key.remoteJid;
+            const sudoData = loadSudoUsers();
+            const botOwner = sudoData.bot_owner;
+            const globalSudoUsers = sudoData.global_sudo_users;
+            
+            const debugInfo = `🔍 *SPECIAL DEBUG - ID COMPARISON*\n\n👤 *Your WhatsApp ID:* ${userId}\n👑 *Bot Owner ID:* ${botOwner}\n🔓 *Global Sudo Users:*\n${globalSudoUsers.map(u => `• ${u}`).join('\n')}\n\n🔍 *Exact Comparisons:*\n• Your ID === Bot Owner: ${userId === botOwner}\n• Your ID in Global Sudo: ${globalSudoUsers.includes(userId)}\n• Your ID length: ${userId.length}\n• Bot Owner length: ${botOwner.length}\n\n💡 *This command bypasses permissions for debugging*`;
             await reply(sock, msg, debugInfo);
             return;
         }
