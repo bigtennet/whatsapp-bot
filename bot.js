@@ -1745,55 +1745,8 @@ async function handleMessage(sock, msg) {
             return;
         }
         
-        // Check if user can use the bot (bot owner or sudo user)
-        const userId = msg.key.participant || msg.key.remoteJid;
-        const groupId = isGroup ? msg.key.remoteJid : null;
-        
-        // Direct permission check with detailed logging
-        const sudoData = loadSudoUsers();
-        const botOwner = (sudoData.bot_owner || '').trim();
-        const globalSudoUsers = (sudoData.global_sudo_users || []).map(u => u.trim());
-        
-        console.log(`🔍 Permission check for user: ${userId}`);
-        console.log(`🔍 Bot owner: ${botOwner}`);
-        console.log(`🔍 Global sudo users: ${globalSudoUsers.join(', ')}`);
-        console.log(`🔍 Group ID: ${groupId}`);
-        
-        let hasPermission = false;
-        
-        // Bot owner can always use the bot
-        if (userId === botOwner) {
-            console.log('✅ User is bot owner');
-            hasPermission = true;
-        }
-        // Check global sudo permissions
-        else if (globalSudoUsers.includes(userId)) {
-            console.log('✅ User is global sudo user');
-            hasPermission = true;
-        }
-        // Check group-specific sudo permissions
-        else if (groupId && sudoData.group_sudo_users[groupId] && sudoData.group_sudo_users[groupId].includes(userId)) {
-            console.log('✅ User is group sudo user');
-            hasPermission = true;
-        }
-        else {
-            console.log('❌ User not authorized');
-            hasPermission = false;
-        }
-        
-        if (!hasPermission) {
-            console.log(`❌ User ${userId} not authorized to use bot in ${isGroup ? 'group' : 'private chat'}`);
-            console.log(`🔍 User ID: ${userId}`);
-            console.log(`🔍 Group ID: ${groupId}`);
-            console.log(`🔍 Is Bot Owner: ${userId === botOwner}`);
-            console.log(`🔍 Is Global Sudo: ${globalSudoUsers.includes(userId)}`);
-            console.log(`🔍 Is Group Sudo: ${groupId ? (sudoData.group_sudo_users[groupId] && sudoData.group_sudo_users[groupId].includes(userId)) : 'N/A'}`);
-            
-            await reply(sock, msg, `${BOT_STYLES.header}🔒 *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n❌ You are not authorized to use this bot.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}\n🌐 Website: ${CREATOR_INFO.website}\n\n🔐 *Only authorized users can use this bot*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
-            return;
-        }
-        
-        console.log(`✅ User ${userId} authorized to use bot in ${isGroup ? 'group' : 'private chat'}`);
+        // Permission system removed - everyone can use the bot now
+        console.log(`✅ User ${userId} using bot in ${isGroup ? 'group' : 'private chat'} - no restrictions`);
         
         // Add a simple test response for any command
         if (cmd.toLowerCase() === '!ping') {
@@ -3140,12 +3093,7 @@ async function convertToSticker(buffer, mediaType) {
 
 async function handleAddSudo(sock, msg, user) {
     try {
-        // Check if the user is the bot owner
-        const userId = msg.key.participant || msg.key.remoteJid;
-        
-        if (!isBotOwner(userId)) {
-            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 Only the bot owner can add sudo users.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
-        }
+        // Permission check removed - anyone can add sudo users now
         
         if (!user) {
             return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!addsudo @user\`\n🎯 *Example:* \`!addsudo @1234567890\`\n\n💫 *Add a user to global sudo permissions*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
@@ -3181,12 +3129,7 @@ async function handleAddSudo(sock, msg, user) {
 
 async function handleRemoveSudo(sock, msg, user) {
     try {
-        // Check if the user is the bot owner
-        const userId = msg.key.participant || msg.key.remoteJid;
-        
-        if (!isBotOwner(userId)) {
-            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 Only the bot owner can remove sudo users.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
-        }
+        // Permission check removed - anyone can remove sudo users now
         
         if (!user) {
             return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!removesudo @user\`\n🎯 *Example:* \`!removesudo @1234567890\`\n\n💫 *Remove a user from global sudo permissions*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
@@ -3222,12 +3165,7 @@ async function handleRemoveSudo(sock, msg, user) {
 
 async function handleAddMyIds(sock, msg) {
     try {
-        // Check if the user is the bot owner
-        const userId = msg.key.participant || msg.key.remoteJid;
-        
-        if (!isBotOwner(userId)) {
-            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 Only the bot owner can add multiple ID formats.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
-        }
+        // Permission check removed - anyone can add multiple ID formats now
         
         // Add multiple ID formats for the bot owner
         const primaryId = '2348124269148@s.whatsapp.net';
@@ -3249,12 +3187,7 @@ async function handleAddMyIds(sock, msg) {
 
 async function handleListSudo(sock, msg) {
     try {
-        // Check if the user is the bot owner
-        const userId = msg.key.participant || msg.key.remoteJid;
-        
-        if (!isBotOwner(userId)) {
-            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 Only the bot owner can view sudo users.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
-        }
+        // Permission check removed - anyone can view sudo users now
         
         const sudoData = loadSudoUsers();
         const isGroup = msg.key.remoteJid.endsWith('@g.us');
