@@ -464,6 +464,50 @@ function formatCategoryHelp(category) {
     return `${BOT_STYLES.header}📂 *${category.toUpperCase()} COMMANDS*\n${BOT_STYLES.divider}\n\n${commands}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
 }
 
+// Keep-alive function to prevent disconnections
+function startKeepAlive(sock) {
+    console.log('🔄 Starting keep-alive mechanism...');
+    
+    // Send a heartbeat every 5 minutes
+    const heartbeatInterval = setInterval(async () => {
+        try {
+            if (sock.user && sock.user.id) {
+                // Send a status update to keep connection alive
+                await sock.updateProfileStatus('🤖 BIG TENNET Bot - Online');
+                console.log('💓 Heartbeat sent - Bot is alive');
+            }
+        } catch (error) {
+            console.log('❌ Heartbeat failed:', error.message);
+        }
+    }, 5 * 60 * 1000); // 5 minutes
+    
+    // Send a ping message to yourself every 15 minutes
+    const pingInterval = setInterval(async () => {
+        try {
+            if (sock.user && sock.user.id) {
+                const botNumber = sock.user.id.split(':')[0];
+                const botJid = `${botNumber}@s.whatsapp.net`;
+                
+                // Send a hidden message to keep connection active
+                await sock.sendMessage(botJid, { 
+                    text: '🔄 Keep-alive ping' 
+                });
+                console.log('📡 Ping sent - Connection maintained');
+            }
+        } catch (error) {
+            console.log('❌ Ping failed:', error.message);
+        }
+    }, 15 * 60 * 1000); // 15 minutes
+    
+    // Log keep-alive status every hour
+    const logInterval = setInterval(() => {
+        console.log('✅ Keep-alive mechanism running - Bot connection stable');
+    }, 60 * 60 * 1000); // 1 hour
+    
+    // Store intervals for cleanup
+    sock.keepAliveIntervals = [heartbeatInterval, pingInterval, logInterval];
+}
+
 // DB file path
 const DB_PATH = path.join(__dirname, 'db.json');
 

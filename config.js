@@ -4,7 +4,7 @@
 module.exports = {
     // OpenAI API Configuration
     openai: {
-        apiKey: process.env.OPENAI_API_KEY || '', // Add your OpenAI API key here
+        apiKey: '', // Add your OpenAI API key here
         model: 'gpt-3.5-turbo', // Default model
         maxTokens: 1000, // Maximum tokens for responses
         temperature: 0.7 // Creativity level (0.0 to 1.0)
