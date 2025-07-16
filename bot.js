@@ -1727,13 +1727,45 @@ async function handleMessage(sock, msg) {
         const userId = msg.key.participant || msg.key.remoteJid;
         const groupId = isGroup ? msg.key.remoteJid : null;
         
-        if (!canUseBot(userId, groupId)) {
+        // Direct permission check with detailed logging
+        const sudoData = loadSudoUsers();
+        const botOwner = (sudoData.bot_owner || '').trim();
+        const globalSudoUsers = (sudoData.global_sudo_users || []).map(u => u.trim());
+        
+        console.log(`🔍 Permission check for user: ${userId}`);
+        console.log(`🔍 Bot owner: ${botOwner}`);
+        console.log(`🔍 Global sudo users: ${globalSudoUsers.join(', ')}`);
+        console.log(`🔍 Group ID: ${groupId}`);
+        
+        let hasPermission = false;
+        
+        // Bot owner can always use the bot
+        if (userId === botOwner) {
+            console.log('✅ User is bot owner');
+            hasPermission = true;
+        }
+        // Check global sudo permissions
+        else if (globalSudoUsers.includes(userId)) {
+            console.log('✅ User is global sudo user');
+            hasPermission = true;
+        }
+        // Check group-specific sudo permissions
+        else if (groupId && sudoData.group_sudo_users[groupId] && sudoData.group_sudo_users[groupId].includes(userId)) {
+            console.log('✅ User is group sudo user');
+            hasPermission = true;
+        }
+        else {
+            console.log('❌ User not authorized');
+            hasPermission = false;
+        }
+        
+        if (!hasPermission) {
             console.log(`❌ User ${userId} not authorized to use bot in ${isGroup ? 'group' : 'private chat'}`);
             console.log(`🔍 User ID: ${userId}`);
             console.log(`🔍 Group ID: ${groupId}`);
-            console.log(`🔍 Is Bot Owner: ${isBotOwner(userId)}`);
-            console.log(`🔍 Is Global Sudo: ${isGlobalSudoUser(userId)}`);
-            console.log(`🔍 Is Group Sudo: ${groupId ? isGroupSudoUser(userId, groupId) : 'N/A'}`);
+            console.log(`🔍 Is Bot Owner: ${userId === botOwner}`);
+            console.log(`🔍 Is Global Sudo: ${globalSudoUsers.includes(userId)}`);
+            console.log(`🔍 Is Group Sudo: ${groupId ? (sudoData.group_sudo_users[groupId] && sudoData.group_sudo_users[groupId].includes(userId)) : 'N/A'}`);
             
             await reply(sock, msg, `${BOT_STYLES.header}🔒 *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n❌ You are not authorized to use this bot.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}\n🌐 Website: ${CREATOR_INFO.website}\n\n🔐 *Only authorized users can use this bot*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
             return;
