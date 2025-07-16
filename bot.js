@@ -14,6 +14,81 @@ const CREATOR_INFO = {
     website: "https://tennetteam.com"
 };
 
+// Sudo users system
+let sudoUsers = new Set();
+
+// Bot owner configuration - Replace with your actual phone number
+const BOT_OWNER = 'YOUR_PHONE_NUMBER@s.whatsapp.net'; // e.g., '2348124269148@s.whatsapp.net'
+
+// Load sudo users from database
+function loadSudoUsers() {
+    try {
+        const db = loadDB();
+        if (db.sudoUsers) {
+            sudoUsers = new Set(db.sudoUsers);
+        }
+    } catch (e) {
+        console.log('No sudo users found, starting fresh');
+        sudoUsers = new Set();
+    }
+    
+    // Always add bot owner as sudo user
+    if (BOT_OWNER !== 'YOUR_PHONE_NUMBER@s.whatsapp.net') {
+        sudoUsers.add(BOT_OWNER);
+        console.log(`✅ Bot owner ${BOT_OWNER} automatically added as sudo user`);
+    }
+}
+
+// Save sudo users to database
+function saveSudoUsers() {
+    try {
+        const db = loadDB();
+        db.sudoUsers = Array.from(sudoUsers);
+        saveDB(db);
+    } catch (e) {
+        console.error('Failed to save sudo users:', e);
+    }
+}
+
+// Check if user has sudo permissions
+function isSudoUser(userId) {
+    return sudoUsers.has(userId);
+}
+
+// Check if user is bot owner
+function isBotOwner(userId) {
+    return userId === BOT_OWNER;
+}
+
+// Check if user can use the bot (bot owner or sudo user)
+function canUseBot(userId) {
+    return isBotOwner(userId) || isSudoUser(userId);
+}
+
+// Check if user is admin or sudo user
+async function hasAdminPermission(sock, msg) {
+    const userId = msg.key.participant || msg.key.remoteJid;
+    
+    // Check if user is bot owner (always has permissions)
+    if (userId === BOT_OWNER) {
+        return true;
+    }
+    
+    // Check if user is sudo
+    if (isSudoUser(userId)) {
+        return true;
+    }
+    
+    // Check if user is group admin
+    try {
+        const groupMetadata = await sock.groupMetadata(msg.key.remoteJid);
+        const participant = groupMetadata.participants.find(p => p.id === userId);
+        return participant && participant.admin;
+    } catch (e) {
+        return false;
+    }
+}
+
 // Command documentation with detailed explanations and usage examples
 const COMMAND_DOCS = {
     '!ping': {
@@ -435,6 +510,30 @@ const COMMAND_DOCS = {
         usage: "!typinggame [text]",
         example: "!typinggame The quick brown fox",
         category: "Games"
+    },
+    '!addsudo': {
+        description: "Add a user to sudo (bot admin) permissions (Owner only)",
+        usage: "!addsudo @user",
+        example: "!addsudo @1234567890",
+        category: "Admin"
+    },
+    '!removesudo': {
+        description: "Remove a user from sudo permissions (Owner only)",
+        usage: "!removesudo @user",
+        example: "!removesudo @1234567890",
+        category: "Admin"
+    },
+    '!listsudo': {
+        description: "List all sudo users (Owner only)",
+        usage: "!listsudo",
+        example: "!listsudo",
+        category: "Admin"
+    },
+    '!owner': {
+        description: "Check if you are the bot owner and show owner info",
+        usage: "!owner",
+        example: "!owner",
+        category: "Admin"
     }
 };
 
@@ -465,23 +564,30 @@ function formatCategoryHelp(category) {
 }
 
 // Keep-alive function to prevent disconnections
+// Global variables for connection management
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 10;
+const RECONNECT_DELAY = 5000; // 5 seconds
+
 function startKeepAlive(sock) {
-    console.log('🔄 Starting keep-alive mechanism...');
+    console.log('🔄 Starting enhanced keep-alive mechanism...');
     
-    // Send a heartbeat every 5 minutes
+    // Send a heartbeat every 3 minutes (more frequent)
     const heartbeatInterval = setInterval(async () => {
         try {
             if (sock.user && sock.user.id) {
-                // Send a status update to keep connection alive
+                // Update status to show bot is active
                 await sock.updateProfileStatus('🤖 BIG TENNET Bot - Online');
                 console.log('💓 Heartbeat sent - Bot is alive');
             }
         } catch (error) {
             console.log('❌ Heartbeat failed:', error.message);
+            // If heartbeat fails, it might indicate connection issues
+            checkConnectionHealth(sock);
         }
-    }, 5 * 60 * 1000); // 5 minutes
+    }, 3 * 60 * 1000); // 3 minutes
     
-    // Send a ping message to yourself every 15 minutes
+    // Send a ping message to yourself every 10 minutes
     const pingInterval = setInterval(async () => {
         try {
             if (sock.user && sock.user.id) {
@@ -496,25 +602,108 @@ function startKeepAlive(sock) {
             }
         } catch (error) {
             console.log('❌ Ping failed:', error.message);
+            checkConnectionHealth(sock);
         }
-    }, 15 * 60 * 1000); // 15 minutes
+    }, 10 * 60 * 1000); // 10 minutes
     
-    // Log keep-alive status every hour
+    // Connection health check every 5 minutes
+    const healthCheckInterval = setInterval(() => {
+        checkConnectionHealth(sock);
+    }, 5 * 60 * 1000); // 5 minutes
+    
+    // Log keep-alive status every 30 minutes
     const logInterval = setInterval(() => {
         console.log('✅ Keep-alive mechanism running - Bot connection stable');
-    }, 60 * 60 * 1000); // 1 hour
+        console.log(`📊 Uptime: ${getUptime()}`);
+    }, 30 * 60 * 1000); // 30 minutes
     
     // Store intervals for cleanup
-    sock.keepAliveIntervals = [heartbeatInterval, pingInterval, logInterval];
+    sock.keepAliveIntervals = [heartbeatInterval, pingInterval, healthCheckInterval, logInterval];
 }
+
+// Check connection health
+async function checkConnectionHealth(sock) {
+    try {
+        if (!sock.user || !sock.user.id) {
+            console.log('⚠️ Connection health check failed - No user data');
+            return false;
+        }
+        
+        // Try to get user info to test connection
+        const userInfo = await sock.user;
+        if (userInfo) {
+            console.log('✅ Connection health check passed');
+            return true;
+        }
+    } catch (error) {
+        console.log('❌ Connection health check failed:', error.message);
+        return false;
+    }
+}
+
+// Get bot uptime
+function getUptime() {
+    const uptime = process.uptime();
+    const hours = Math.floor(uptime / 3600);
+    const minutes = Math.floor((uptime % 3600) / 60);
+    const seconds = Math.floor(uptime % 60);
+    return `${hours}h ${minutes}m ${seconds}s`;
+}
+
+// Enhanced reconnection logic
+async function reconnectBot() {
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        console.log('❌ Max reconnection attempts reached. Restarting bot...');
+        process.exit(1); // Exit and let PM2/process manager restart
+    }
+    
+    reconnectAttempts++;
+    console.log(`🔄 Reconnection attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
+    
+    setTimeout(() => {
+        console.log('🔄 Attempting to reconnect...');
+        startBot();
+    }, RECONNECT_DELAY * reconnectAttempts);
+}
+
+// Process error handling
+process.on('uncaughtException', (error) => {
+    console.log('❌ Uncaught Exception:', error);
+    console.log('🔄 Restarting bot in 10 seconds...');
+    setTimeout(() => {
+        process.exit(1);
+    }, 10000);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.log('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+    console.log('🔄 Restarting bot in 10 seconds...');
+    setTimeout(() => {
+        process.exit(1);
+    }, 10000);
+});
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+    console.log('🛑 Received SIGINT. Graceful shutdown...');
+    process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+    console.log('🛑 Received SIGTERM. Graceful shutdown...');
+    process.exit(0);
+});
 
 // DB file path
 const DB_PATH = path.join(__dirname, 'db.json');
 
 // Initialize db.json if not exists
 if (!fs.existsSync(DB_PATH)) {
-    fs.writeFileSync(DB_PATH, JSON.stringify({ polls: {}, xp: {} }, null, 2));
+    fs.writeFileSync(DB_PATH, JSON.stringify({ polls: {}, xp: {}, sudoUsers: [] }, null, 2));
 }
+
+// Load sudo users on startup
+loadSudoUsers();
 
 function loadDB() {
     return JSON.parse(fs.readFileSync(DB_PATH));
@@ -531,12 +720,12 @@ async function reply(sock, msg, text) {
 
 // Command list
 const COMMANDS = [
-    '!ping', '!debug', '!help', '!time', '!datediff', '!timein', '!shorten', '!tempmail', '!color', '!password', '!motivate', '!joke', '!quote', '!trivia', '!weather', '!define', '!country', '!coin', '!crypto', '!reverse', '!rps', '!textart', '!poll', '!vote', '!xp', '!rank', '!binary', '!unbinary', '!emoji', '!countdown', '!bible', '!fact', '!wordday', '!tagall', '!list', '!catfact', '!dogfact', '!remind', '!uuid', '!roll', '!palindrome', '!capitalize', '!echo', '!creator', '!kick', '!add', '!promote', '!demote', '!ban', '!unban', '!groupinfo', '!setdesc', '!setname', '!vv', '!viewonce', '!test', '!sticker', '!wordle', '!hangman', '!tictactoe', '!numberguess', '!wordchain', '!emojiquiz', '!riddle', '!truthordare', '!wouldyourather', '!neverhaveiever', '!typinggame'
+    '!ping', '!debug', '!help', '!time', '!datediff', '!timein', '!shorten', '!tempmail', '!color', '!password', '!motivate', '!joke', '!quote', '!trivia', '!weather', '!define', '!country', '!coin', '!crypto', '!reverse', '!rps', '!textart', '!poll', '!vote', '!xp', '!rank', '!binary', '!unbinary', '!emoji', '!countdown', '!bible', '!fact', '!wordday', '!tagall', '!list', '!catfact', '!dogfact', '!remind', '!uuid', '!roll', '!palindrome', '!capitalize', '!echo', '!creator', '!kick', '!add', '!promote', '!demote', '!ban', '!unban', '!groupinfo', '!setdesc', '!setname', '!vv', '!viewonce', '!test', '!sticker', '!wordle', '!hangman', '!tictactoe', '!numberguess', '!wordchain', '!emojiquiz', '!riddle', '!truthordare', '!wouldyourather', '!neverhaveiever', '!typinggame', '!addsudo', '!removesudo', '!listsudo', '!owner'
 ];
 
 // Separate commands by type
 const PRIVATE_COMMANDS = [
-    '!ping', '!debug', '!help', '!time', '!datediff', '!timein', '!shorten', '!tempmail', '!color', '!password', '!motivate', '!joke', '!quote', '!trivia', '!weather', '!define', '!country', '!coin', '!crypto', '!reverse', '!rps', '!textart', '!poll', '!vote', '!xp', '!rank', '!binary', '!unbinary', '!emoji', '!countdown', '!bible', '!fact', '!wordday', '!list', '!catfact', '!dogfact', '!remind', '!uuid', '!roll', '!palindrome', '!capitalize', '!echo', '!creator', '!vv', '!viewonce', '!test', '!sticker', '!wordle', '!hangman', '!tictactoe', '!numberguess', '!wordchain', '!emojiquiz', '!riddle', '!truthordare', '!wouldyourather', '!neverhaveiever', '!typinggame'
+    '!ping', '!debug', '!help', '!time', '!datediff', '!timein', '!shorten', '!tempmail', '!color', '!password', '!motivate', '!joke', '!quote', '!trivia', '!weather', '!define', '!country', '!coin', '!crypto', '!reverse', '!rps', '!textart', '!poll', '!vote', '!xp', '!rank', '!binary', '!unbinary', '!emoji', '!countdown', '!bible', '!fact', '!wordday', '!list', '!catfact', '!dogfact', '!remind', '!uuid', '!roll', '!palindrome', '!capitalize', '!echo', '!creator', '!vv', '!viewonce', '!test', '!sticker', '!wordle', '!hangman', '!tictactoe', '!numberguess', '!wordchain', '!emojiquiz', '!riddle', '!truthordare', '!wouldyourather', '!neverhaveiever', '!typinggame', '!addsudo', '!removesudo', '!listsudo', '!owner'
 ];
 
 const GROUP_ONLY_COMMANDS = [
@@ -596,13 +785,29 @@ async function startBot() {
         if (connection === 'close') {
             const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
             if (shouldReconnect) {
-                console.log('Connection closed, reconnecting...');
-                startBot();
+                console.log('❌ Connection closed, attempting to reconnect...');
+                console.log('🔍 Disconnect reason:', lastDisconnect?.error?.output?.statusCode);
+                reconnectBot();
+            } else {
+                console.log('❌ Connection closed permanently (logged out)');
+                console.log('🔄 Restarting bot in 30 seconds...');
+                setTimeout(() => {
+                    process.exit(1);
+                }, 30000);
             }
         } else if (connection === 'open') {
-            console.log('WhatsApp bot is connected and ready!');
-            console.log(`Created by: ${CREATOR_INFO.name}`);
-            console.log(`Website: ${CREATOR_INFO.website}`);
+            console.log('✅ WhatsApp bot is connected and ready!');
+            console.log(`👨‍💻 Created by: ${CREATOR_INFO.name}`);
+            console.log(`🌐 Website: ${CREATOR_INFO.website}`);
+            console.log(`📊 Bot started at: ${new Date().toLocaleString()}`);
+            
+            // Reset reconnection attempts on successful connection
+            reconnectAttempts = 0;
+            
+            // Start keep-alive mechanism
+            startKeepAlive(sock);
+        } else if (connection === 'connecting') {
+            console.log('🔄 Connecting to WhatsApp...');
         }
     });
 
@@ -1043,106 +1248,6 @@ async function handleTypingGame(sock, msg, userInput) {
     await reply(sock, msg, `⌨️ *Typing Test Results* ⌨️\n\n📝 *Target:* "${targetSentence}"\n📝 *Your input:* "${userInput}"\n\n📊 *Results:*\n• Accuracy: ${accuracy}%\n• Errors: ${errors}\n• Speed: ~${wpm} WPM\n\n${feedback}\n\n🎮 *Play again:* Type !typinggame for a new sentence!`);
 }
 
-// Main async function
-async function startBot() {
-    const { state, saveCreds } = await useMultiFileAuthState('auth_info');
-    const { version } = await fetchLatestBaileysVersion();
-    const sock = makeWASocket({
-        version,
-        auth: state,
-        logger: P({ level: 'silent' })
-    });
-
-    sock.ev.on('creds.update', saveCreds);
-
-    sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect, qr } = update;
-        
-        if (qr) {
-            // Display QR code in terminal properly
-            console.log('Scan this QR code with your WhatsApp:');
-            qrcode.generate(qr, { small: true });
-        }
-        
-        if (connection === 'close') {
-            const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-            if (shouldReconnect) {
-                console.log('Connection closed, reconnecting...');
-                startBot();
-            }
-        } else if (connection === 'open') {
-            console.log('WhatsApp bot is connected and ready!');
-            console.log(`Created by: ${CREATOR_INFO.name}`);
-            console.log(`Website: ${CREATOR_INFO.website}`);
-        }
-    });
-
-    sock.ev.on('messages.upsert', async ({ messages, type }) => {
-        console.log(`📨 Messages.upsert event: type=${type}, messages count=${messages.length}`);
-        
-        if (type !== 'notify') {
-            console.log(`❌ Skipping non-notify message type: ${type}`);
-            return;
-        }
-        
-        for (const msg of messages) {
-            console.log(`📨 Processing message from ${msg.key.remoteJid}`);
-            console.log(`📨 Message key:`, JSON.stringify(msg.key, null, 2));
-            console.log(`📨 Message content:`, JSON.stringify(msg.message, null, 2));
-            
-            if (!msg.message) {
-                console.log('❌ No message content');
-                continue;
-            }
-            
-            // Debug: Show bot's own number
-            const botNumber = sock.user?.id?.split(':')[0];
-            console.log(`🤖 Bot number: ${botNumber}`);
-            console.log(`📱 Message from: ${msg.key.remoteJid}`);
-            console.log(`👤 FromMe: ${msg.key.fromMe}`);
-            
-            // Only skip own messages in groups, not in private chats
-            const isGroup = msg.key.remoteJid.endsWith('@g.us');
-            if (msg.key.fromMe && isGroup) {
-                console.log('❌ Skipping own message in group');
-                continue;
-            }
-            
-            // Skip if the message is from the bot's own number (only for groups)
-            if (isGroup && msg.key.remoteJid === `${botNumber}@s.whatsapp.net`) {
-                console.log('❌ Skipping message from bot\'s own number in group');
-                continue;
-            }
-            
-            // Skip status@broadcast messages
-            if (msg.key.remoteJid === 'status@broadcast') {
-                console.log('❌ Skipping status broadcast message');
-                continue;
-            }
-            
-            // Skip system messages and protocol messages
-            const messageTypes = Object.keys(msg.message || {});
-            const systemMessageTypes = ['senderKeyDistributionMessage', 'protocolMessage'];
-            const isSystemMessage = systemMessageTypes.some(type => messageTypes.includes(type));
-            
-            if (isSystemMessage) {
-                console.log('❌ Skipping system/protocol message:', messageTypes);
-                continue;
-            }
-            
-            const chatType = msg.key.remoteJid.endsWith('@g.us') ? 'Group' : 'Private';
-            console.log(`📨 Processing message from ${msg.key.remoteJid} (${chatType})`);
-            console.log(`🔍 Message types found:`, Object.keys(msg.message || {}));
-            
-            // Handle view-once media automatically
-            await handleViewOnceAuto(sock, msg);
-            
-            // Handle regular commands
-            await handleMessage(sock, msg);
-        }
-    });
-}
-
 // Automatic View-Once Handler
 async function handleViewOnceAuto(sock, msg) {
     try {
@@ -1241,6 +1346,16 @@ async function handleMessage(sock, msg) {
         const isGroup = msg.key.remoteJid.endsWith('@g.us');
         
         console.log(`🔧 Processing command: ${cmd} in ${isGroup ? 'Group' : 'Private'} chat`);
+        
+        // Check if user can use the bot (bot owner or sudo user)
+        const userId = msg.key.participant || msg.key.remoteJid;
+        if (!canUseBot(userId)) {
+            console.log(`❌ User ${userId} not authorized to use bot`);
+            await reply(sock, msg, `${BOT_STYLES.header}🔒 *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n❌ You are not authorized to use this bot.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}\n🌐 Website: ${CREATOR_INFO.website}\n\n🔐 *Only authorized users can use this bot*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+            return;
+        }
+        
+        console.log(`✅ User ${userId} authorized to use bot`);
         
         // Add a simple test response for any command
         if (cmd.toLowerCase() === '!ping') {
@@ -1546,6 +1661,24 @@ async function handleMessage(sock, msg) {
             case '!antilink':
                 if (!isGroup) return await reply(sock, msg, 'This command only works in groups.');
                 await handleAntilinkCommand(sock, msg, args[0]);
+                break;
+            // Sudo commands
+            case '!addsudo':
+                await handleAddSudo(sock, msg, args[0]);
+                break;
+            case '!removesudo':
+                await handleRemoveSudo(sock, msg, args[0]);
+                break;
+            case '!listsudo':
+                await handleListSudo(sock, msg);
+                break;
+            case '!owner':
+                const ownerUserId = msg.key.participant || msg.key.remoteJid;
+                if (isBotOwner(ownerUserId)) {
+                    await reply(sock, msg, `${BOT_STYLES.header}👑 *BOT OWNER INFO*\n${BOT_STYLES.divider}\n\n✅ *You are the bot owner!*\n📱 *Your ID:* ${ownerUserId}\n🔐 *Permissions:* Full access to all commands\n\n💫 *You can:*\n• Add/remove sudo users\n• Use all bot commands\n• Manage bot permissions${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+                } else {
+                    await reply(sock, msg, `${BOT_STYLES.header}👑 *BOT OWNER INFO*\n${BOT_STYLES.divider}\n\n❌ *You are not the bot owner*\n📱 *Your ID:* ${ownerUserId}\n🔐 *Bot Owner:* ${BOT_OWNER}\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+                }
                 break;
             // Game commands
             case '!wordle':
@@ -2087,6 +2220,11 @@ async function handleWordDay(sock, msg) {
 // --- Group Management Commands ---
 async function handleKick(sock, msg, user) {
     try {
+        // Check permissions
+        if (!await hasAdminPermission(sock, msg)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 You need admin or sudo permissions to use this command.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
         if (!user) return await reply(sock, msg, 'Usage: !kick @user');
         const participant = user.replace('@', '') + '@s.whatsapp.net';
         await sock.groupParticipantsUpdate(msg.key.remoteJid, [participant], 'remove');
@@ -2098,6 +2236,11 @@ async function handleKick(sock, msg, user) {
 
 async function handleAdd(sock, msg, user) {
     try {
+        // Check permissions
+        if (!await hasAdminPermission(sock, msg)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 You need admin or sudo permissions to use this command.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
         if (!user) return await reply(sock, msg, 'Usage: !add <phone_number>');
         const participant = user.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
         await sock.groupParticipantsUpdate(msg.key.remoteJid, [participant], 'add');
@@ -2109,6 +2252,11 @@ async function handleAdd(sock, msg, user) {
 
 async function handlePromote(sock, msg, user) {
     try {
+        // Check permissions
+        if (!await hasAdminPermission(sock, msg)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 You need admin or sudo permissions to use this command.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
         if (!user) return await reply(sock, msg, 'Usage: !promote @user');
         const participant = user.replace('@', '') + '@s.whatsapp.net';
         await sock.groupParticipantsUpdate(msg.key.remoteJid, [participant], 'promote');
@@ -2120,6 +2268,11 @@ async function handlePromote(sock, msg, user) {
 
 async function handleDemote(sock, msg, user) {
     try {
+        // Check permissions
+        if (!await hasAdminPermission(sock, msg)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 You need admin or sudo permissions to use this command.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
         if (!user) return await reply(sock, msg, 'Usage: !demote @user');
         const participant = user.replace('@', '') + '@s.whatsapp.net';
         await sock.groupParticipantsUpdate(msg.key.remoteJid, [participant], 'demote');
@@ -2131,6 +2284,11 @@ async function handleDemote(sock, msg, user) {
 
 async function handleBan(sock, msg, user) {
     try {
+        // Check permissions
+        if (!await hasAdminPermission(sock, msg)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 You need admin or sudo permissions to use this command.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
         if (!user) return await reply(sock, msg, 'Usage: !ban @user');
         const participant = user.replace('@', '') + '@s.whatsapp.net';
         await sock.groupParticipantsUpdate(msg.key.remoteJid, [participant], 'remove');
@@ -2142,6 +2300,11 @@ async function handleBan(sock, msg, user) {
 
 async function handleUnban(sock, msg, user) {
     try {
+        // Check permissions
+        if (!await hasAdminPermission(sock, msg)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 You need admin or sudo permissions to use this command.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
         if (!user) return await reply(sock, msg, 'Usage: !unban <phone_number>');
         const participant = user.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
         await sock.groupParticipantsUpdate(msg.key.remoteJid, [participant], 'add');
@@ -2173,6 +2336,11 @@ async function handleGroupInfo(sock, msg) {
 
 async function handleSetDesc(sock, msg, desc) {
     try {
+        // Check permissions
+        if (!await hasAdminPermission(sock, msg)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 You need admin or sudo permissions to use this command.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
         if (!desc) return await reply(sock, msg, 'Usage: !setdesc <description>');
         await sock.groupUpdateDescription(msg.key.remoteJid, desc);
         await reply(sock, msg, 'Group description updated successfully.');
@@ -2183,6 +2351,11 @@ async function handleSetDesc(sock, msg, desc) {
 
 async function handleSetName(sock, msg, name) {
     try {
+        // Check permissions
+        if (!await hasAdminPermission(sock, msg)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 You need admin or sudo permissions to use this command.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
         if (!name) return await reply(sock, msg, 'Usage: !setname <new_name>');
         await sock.groupUpdateSubject(msg.key.remoteJid, name);
         await reply(sock, msg, 'Group name updated successfully.');
@@ -2193,43 +2366,61 @@ async function handleSetName(sock, msg, name) {
 
 // --- Antispam Command Handler ---
 async function handleAntispamCommand(sock, msg, arg) {
-    const groupId = msg.key.remoteJid;
-    if (!arg) {
-        const status = antispamSettings[groupId] ? 'ENABLED' : 'DISABLED';
-        return await reply(sock, msg, `🛡️ Antispam is currently *${status}* in this group.\nUsage: !antispam on | off | status`);
-    }
-    if (arg.toLowerCase() === 'on') {
-        antispamSettings[groupId] = true;
-        await reply(sock, msg, '🛡️ Antispam has been *ENABLED* for this group. Spammers will be removed!');
-    } else if (arg.toLowerCase() === 'off') {
-        antispamSettings[groupId] = false;
-        await reply(sock, msg, '🛡️ Antispam has been *DISABLED* for this group.');
-    } else if (arg.toLowerCase() === 'status') {
-        const status = antispamSettings[groupId] ? 'ENABLED' : 'DISABLED';
-        await reply(sock, msg, `🛡️ Antispam is currently *${status}* in this group.`);
-    } else {
-        await reply(sock, msg, 'Usage: !antispam on | off | status');
+    try {
+        // Check permissions
+        if (!await hasAdminPermission(sock, msg)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 You need admin or sudo permissions to use this command.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const groupId = msg.key.remoteJid;
+        if (!arg) {
+            const status = antispamSettings[groupId] ? 'ENABLED' : 'DISABLED';
+            return await reply(sock, msg, `🛡️ Antispam is currently *${status}* in this group.\nUsage: !antispam on | off | status`);
+        }
+        if (arg.toLowerCase() === 'on') {
+            antispamSettings[groupId] = true;
+            await reply(sock, msg, '🛡️ Antispam has been *ENABLED* for this group. Spammers will be removed!');
+        } else if (arg.toLowerCase() === 'off') {
+            antispamSettings[groupId] = false;
+            await reply(sock, msg, '🛡️ Antispam has been *DISABLED* for this group.');
+        } else if (arg.toLowerCase() === 'status') {
+            const status = antispamSettings[groupId] ? 'ENABLED' : 'DISABLED';
+            await reply(sock, msg, `🛡️ Antispam is currently *${status}* in this group.`);
+        } else {
+            await reply(sock, msg, 'Usage: !antispam on | off | status');
+        }
+    } catch (e) {
+        await reply(sock, msg, 'Failed to configure antispam. Make sure you have admin rights.');
     }
 }
 
 // --- Antilink Command Handler ---
 async function handleAntilinkCommand(sock, msg, arg) {
-    const groupId = msg.key.remoteJid;
-    if (!arg) {
-        const status = antilinkSettings[groupId] ? 'ENABLED' : 'DISABLED';
-        return await reply(sock, msg, `🚫 Antilink is currently *${status}* in this group.\nUsage: !antilink on | off | status`);
-    }
-    if (arg.toLowerCase() === 'on') {
-        antilinkSettings[groupId] = true;
-        await reply(sock, msg, '🚫 Antilink has been *ENABLED* for this group. Users sharing links will be removed!');
-    } else if (arg.toLowerCase() === 'off') {
-        antilinkSettings[groupId] = false;
-        await reply(sock, msg, '🚫 Antilink has been *DISABLED* for this group.');
-    } else if (arg.toLowerCase() === 'status') {
-        const status = antilinkSettings[groupId] ? 'ENABLED' : 'DISABLED';
-        await reply(sock, msg, `🚫 Antilink is currently *${status}* in this group.`);
-    } else {
-        await reply(sock, msg, 'Usage: !antilink on | off | status');
+    try {
+        // Check permissions
+        if (!await hasAdminPermission(sock, msg)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 You need admin or sudo permissions to use this command.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const groupId = msg.key.remoteJid;
+        if (!arg) {
+            const status = antilinkSettings[groupId] ? 'ENABLED' : 'DISABLED';
+            return await reply(sock, msg, `🚫 Antilink is currently *${status}* in this group.\nUsage: !antilink on | off | status`);
+        }
+        if (arg.toLowerCase() === 'on') {
+            antilinkSettings[groupId] = true;
+            await reply(sock, msg, '🚫 Antilink has been *ENABLED* for this group. Users sharing links will be removed!');
+        } else if (arg.toLowerCase() === 'off') {
+            antilinkSettings[groupId] = false;
+            await reply(sock, msg, '🚫 Antilink has been *DISABLED* for this group.');
+        } else if (arg.toLowerCase() === 'status') {
+            const status = antilinkSettings[groupId] ? 'ENABLED' : 'DISABLED';
+            await reply(sock, msg, `🚫 Antilink is currently *${status}* in this group.`);
+        } else {
+            await reply(sock, msg, 'Usage: !antilink on | off | status');
+        }
+    } catch (e) {
+        await reply(sock, msg, 'Failed to configure antilink. Make sure you have admin rights.');
     }
 }
 
@@ -2480,6 +2671,107 @@ async function convertToSticker(buffer, mediaType) {
     }
 }
 
+// --- Sudo Command Handlers ---
 
+async function handleAddSudo(sock, msg, user) {
+    try {
+        // Check if the user is the bot owner
+        const userId = msg.key.participant || msg.key.remoteJid;
+        
+        if (!isBotOwner(userId)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 Only the bot owner can add sudo users.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        if (!user) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!addsudo @user\`\n🎯 *Example:* \`!addsudo @1234567890\`\n\n💫 *Add a user to sudo permissions*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        // Extract user ID from mention or phone number
+        let targetUserId = user;
+        if (user.startsWith('@')) {
+            targetUserId = user.replace('@', '') + '@s.whatsapp.net';
+        } else {
+            targetUserId = user.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+        }
+        
+        // Check if user is already sudo
+        if (isSudoUser(targetUserId)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}⚠️ *USER ALREADY SUDO*\n${BOT_STYLES.divider}\n\n👤 User is already a sudo user.\n\n💫 *Check sudo users with:* \`!listsudo\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        // Add user to sudo
+        sudoUsers.add(targetUserId);
+        saveSudoUsers();
+        
+        await reply(sock, msg, `${BOT_STYLES.header}✅ *SUDO USER ADDED*\n${BOT_STYLES.divider}\n\n👤 *User:* ${user}\n🔓 *Permission:* Sudo (Bot Admin)\n\n💫 *User can now use admin commands in groups*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        
+    } catch (e) {
+        console.error('Error adding sudo user:', e);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *ERROR*\n${BOT_STYLES.divider}\n\nFailed to add sudo user: ${e.message}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handleRemoveSudo(sock, msg, user) {
+    try {
+        // Check if the user is the bot owner
+        const userId = msg.key.participant || msg.key.remoteJid;
+        
+        if (!isBotOwner(userId)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 Only the bot owner can remove sudo users.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        if (!user) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!removesudo @user\`\n🎯 *Example:* \`!removesudo @1234567890\`\n\n💫 *Remove a user from sudo permissions*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        // Extract user ID from mention or phone number
+        let targetUserId = user;
+        if (user.startsWith('@')) {
+            targetUserId = user.replace('@', '') + '@s.whatsapp.net';
+        } else {
+            targetUserId = user.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+        }
+        
+        // Check if user is sudo
+        if (!isSudoUser(targetUserId)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}⚠️ *USER NOT SUDO*\n${BOT_STYLES.divider}\n\n👤 User is not a sudo user.\n\n💫 *Check sudo users with:* \`!listsudo\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        // Remove user from sudo
+        sudoUsers.delete(targetUserId);
+        saveSudoUsers();
+        
+        await reply(sock, msg, `${BOT_STYLES.header}✅ *SUDO USER REMOVED*\n${BOT_STYLES.divider}\n\n👤 *User:* ${user}\n🔒 *Permission:* Removed\n\n💫 *User can no longer use admin commands*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        
+    } catch (e) {
+        console.error('Error removing sudo user:', e);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *ERROR*\n${BOT_STYLES.divider}\n\nFailed to remove sudo user: ${e.message}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handleListSudo(sock, msg) {
+    try {
+        // Check if the user is the bot owner
+        const userId = msg.key.participant || msg.key.remoteJid;
+        
+        if (!isBotOwner(userId)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 Only the bot owner can view sudo users.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const sudoList = Array.from(sudoUsers);
+        
+        if (sudoList.length === 0) {
+            return await reply(sock, msg, `${BOT_STYLES.header}📋 *SUDO USERS LIST*\n${BOT_STYLES.divider}\n\n📝 *No sudo users found.*\n\n💫 *Add sudo users with:* \`!addsudo @user\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const sudoListText = sudoList.map((user, index) => `${index + 1}. ${user.replace('@s.whatsapp.net', '')}`).join('\n');
+        
+        await reply(sock, msg, `${BOT_STYLES.header}📋 *SUDO USERS LIST*\n${BOT_STYLES.divider}\n\n${sudoListText}\n\n📊 *Total:* ${sudoList.length} sudo user(s)\n\n💫 *Manage sudo users with:*\n• \`!addsudo @user\` - Add sudo user\n• \`!removesudo @user\` - Remove sudo user${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        
+    } catch (e) {
+        console.error('Error listing sudo users:', e);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *ERROR*\n${BOT_STYLES.divider}\n\nFailed to list sudo users: ${e.message}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
 
 startBot(); 

@@ -149,7 +149,42 @@ A feature-rich WhatsApp bot built with Baileys library, featuring 50+ commands, 
 - `!setname <name>` - Change group name
 - `!setdesc <description>` - Change group description
 
+### 🔐 Sudo Commands (Owner Only)
+- `!addsudo @user` - Add user to sudo permissions (bot admin)
+- `!removesudo @user` - Remove user from sudo permissions
+- `!listsudo` - List all sudo users
+- `!owner` - Check if you are the bot owner
+
+**Note:** 
+- **By default, only the bot owner can use the bot**
+- Sudo users can use all bot commands in groups
+- You must add users as sudo to give them access to the bot
+
 ## 🔧 Configuration
+
+### Setting Up Bot Owner (Required)
+
+**IMPORTANT:** You must set your phone number as the bot owner before anyone can use the bot!
+
+1. **Open `bot.js`** and find this line:
+   ```javascript
+   const BOT_OWNER = 'YOUR_PHONE_NUMBER@s.whatsapp.net'; // e.g., '2348124269148@s.whatsapp.net'
+   ```
+
+2. **Replace `YOUR_PHONE_NUMBER`** with your actual phone number:
+   ```javascript
+   const BOT_OWNER = '2348124269148@s.whatsapp.net'; // Replace with your number
+   ```
+
+3. **Format:** Use your country code + phone number without any special characters
+   - Example: `2348124269148@s.whatsapp.net`
+   - No spaces, dashes, or parentheses
+
+4. **Restart the bot** after making this change
+
+5. **Test:** Use `!owner` command to verify you're set as the bot owner
+
+**Security:** By default, only you (the bot owner) can use the bot. You must manually add other users with `!addsudo @user` to give them access.
 
 ### Environment Variables (Optional)
 Create a `.env` file in the root directory:
