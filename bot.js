@@ -146,6 +146,28 @@ function addGlobalSudoUser(userId) {
     return false;
 }
 
+// Add multiple ID formats for the same user (for WhatsApp ID variations)
+function addUserMultipleIds(primaryId, additionalIds) {
+    const sudoData = loadSudoUsers();
+    const allIds = [primaryId, ...additionalIds];
+    
+    // Add all ID formats if they don't exist
+    let added = false;
+    allIds.forEach(id => {
+        if (!sudoData.global_sudo_users.includes(id)) {
+            sudoData.global_sudo_users.push(id);
+            added = true;
+        }
+    });
+    
+    if (added) {
+        saveSudoUsers(sudoData);
+        console.log(`✅ Added multiple ID formats for user: ${allIds.join(', ')}`);
+        return true;
+    }
+    return false;
+}
+
 // Remove global sudo user
 function removeGlobalSudoUser(userId) {
     const sudoData = loadSudoUsers();
@@ -2103,6 +2125,10 @@ async function handleMessage(sock, msg) {
             case '!listsudo':
                 await handleListSudo(sock, msg);
                 break;
+                
+            case '!addmyids':
+                await handleAddMyIds(sock, msg);
+                break;
             case '!owner':
                 const ownerUserId = msg.key.participant || msg.key.remoteJid;
                 const sudoData = loadSudoUsers();
@@ -3191,6 +3217,33 @@ async function handleRemoveSudo(sock, msg, user) {
     } catch (e) {
         console.error('Error removing sudo user:', e);
         await reply(sock, msg, `${BOT_STYLES.header}❌ *ERROR*\n${BOT_STYLES.divider}\n\nFailed to remove sudo user: ${e.message}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handleAddMyIds(sock, msg) {
+    try {
+        // Check if the user is the bot owner
+        const userId = msg.key.participant || msg.key.remoteJid;
+        
+        if (!isBotOwner(userId)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 Only the bot owner can add multiple ID formats.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        // Add multiple ID formats for the bot owner
+        const primaryId = '2348124269148@s.whatsapp.net';
+        const additionalIds = ['62152807309553@lid'];
+        
+        const success = addUserMultipleIds(primaryId, additionalIds);
+        
+        if (success) {
+            await reply(sock, msg, `${BOT_STYLES.header}✅ *MULTIPLE ID FORMATS ADDED*\n${BOT_STYLES.divider}\n\n👤 *Primary ID:* ${primaryId}\n🔗 *Additional IDs:*\n${additionalIds.map(id => `• ${id}`).join('\n')}\n\n💫 *All ID formats are now authorized*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}⚠️ *NO CHANGES NEEDED*\n${BOT_STYLES.divider}\n\nAll ID formats are already configured.\n\n💫 *Check current sudo users with:* \`!listsudo\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+    } catch (e) {
+        console.error('Error adding multiple IDs:', e);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *ERROR*\n${BOT_STYLES.divider}\n\nFailed to add multiple ID formats: ${e.message}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
     }
 }
 
