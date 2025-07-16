@@ -97,26 +97,39 @@ function isBotOwner(userId) {
 
 // Check if user can use the bot (bot owner or sudo user)
 function canUseBot(userId, groupId = null) {
+    console.log(`🔍 Permission check for user: ${userId}`);
+    console.log(`🔍 Group ID: ${groupId}`);
+    
+    // TEMPORARY: Allow everyone to use the bot for debugging
+    console.log('⚠️ TEMPORARY: Allowing all users to use the bot for debugging');
+    return true;
+    
     // Bot owner can always use the bot
     if (isBotOwner(userId)) {
+        console.log('✅ User is bot owner');
         return true;
     }
     
     // Check global sudo permissions
     if (isGlobalSudoUser(userId)) {
+        console.log('✅ User is global sudo user');
         return true;
     }
     
     // Check group-specific sudo permissions
     if (groupId && isGroupSudoUser(userId, groupId)) {
+        console.log('✅ User is group sudo user');
         return true;
     }
     
     // If no group specified, check global permissions only
     if (!groupId) {
-        return isGlobalSudoUser(userId);
+        const isGlobal = isGlobalSudoUser(userId);
+        console.log(`🔍 Global sudo check: ${isGlobal}`);
+        return isGlobal;
     }
     
+    console.log('❌ User not authorized');
     return false;
 }
 
@@ -1724,7 +1737,9 @@ async function handleMessage(sock, msg) {
         // Add a simple debug command
         if (cmd.toLowerCase() === '!debug') {
             console.log('🐛 DEBUG command detected!');
-            const debugInfo = `🐛 *Debug Info*\n\n📱 *Chat Type:* ${isGroup ? 'Group' : 'Private'}\n👤 *From:* ${msg.key.remoteJid}\n💬 *Command:* ${cmd}\n🔧 *Args:* ${args.join(', ')}\n⏰ *Time:* ${new Date().toISOString()}`;
+            const userId = msg.key.participant || msg.key.remoteJid;
+            const sudoData = loadSudoUsers();
+            const debugInfo = `🐛 *Debug Info*\n\n📱 *Chat Type:* ${isGroup ? 'Group' : 'Private'}\n👤 *From:* ${msg.key.remoteJid}\n👤 *User ID:* ${userId}\n💬 *Command:* ${cmd}\n🔧 *Args:* ${args.join(', ')}\n⏰ *Time:* ${new Date().toISOString()}\n\n🔐 *Permission Debug:*\n• Bot Owner: ${sudoData.bot_owner}\n• Is Bot Owner: ${isBotOwner(userId)}\n• Is Global Sudo: ${isGlobalSudoUser(userId)}\n• Global Sudo Users: ${sudoData.global_sudo_users.join(', ')}`;
             await reply(sock, msg, debugInfo);
             return;
         }
