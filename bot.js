@@ -18,7 +18,7 @@ const CREATOR_INFO = {
 let sudoUsers = new Set();
 
 // Bot owner configuration - Replace with your actual phone number
-const BOT_OWNER = 'YOUR_PHONE_NUMBER@s.whatsapp.net'; // e.g., '2348124269148@s.whatsapp.net'
+const BOT_OWNER = '2348124269148@s.whatsapp.net'; // e.g., '2348124269148@s.whatsapp.net'
 
 // Load sudo users from database
 function loadSudoUsers() {
@@ -62,6 +62,12 @@ function isBotOwner(userId) {
 
 // Check if user can use the bot (bot owner or sudo user)
 function canUseBot(userId) {
+    // TEMPORARY: If bot owner is not set, allow everyone to use the bot
+    if (BOT_OWNER === 'YOUR_PHONE_NUMBER@s.whatsapp.net') {
+        console.log('⚠️ Bot owner not set - allowing all users temporarily');
+        return true;
+    }
+    
     return isBotOwner(userId) || isSudoUser(userId);
 }
 
