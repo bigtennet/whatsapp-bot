@@ -1745,8 +1745,7 @@ async function handleMessage(sock, msg) {
             return;
         }
         
-        // Permission system removed - everyone can use the bot now
-        console.log(`✅ User ${userId} using bot in ${isGroup ? 'group' : 'private chat'} - no restrictions`);
+        // Permission system completely removed - no restrictions
         
         // Add a simple test response for any command
         if (cmd.toLowerCase() === '!ping') {
