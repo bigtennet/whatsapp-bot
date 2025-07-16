@@ -34,7 +34,7 @@ function loadSudoUsers() {
     }
     
     // Always add bot owner as sudo user
-    if (BOT_OWNER !== 'YOUR_PHONE_NUMBER@s.whatsapp.net') {
+    if (BOT_OWNER !== '2348124269148@s.whatsapp.net') {
         sudoUsers.add(BOT_OWNER);
         console.log(`✅ Bot owner ${BOT_OWNER} automatically added as sudo user`);
     }
@@ -64,7 +64,7 @@ function isBotOwner(userId) {
 // Check if user can use the bot (bot owner or sudo user)
 function canUseBot(userId) {
     // TEMPORARY: If bot owner is not set, allow everyone to use the bot
-    if (BOT_OWNER === 'YOUR_PHONE_NUMBER@s.whatsapp.net') {
+    if (BOT_OWNER === '2348124269148@s.whatsapp.net') {
         console.log('⚠️ Bot owner not set - allowing all users temporarily');
         return true;
     }
