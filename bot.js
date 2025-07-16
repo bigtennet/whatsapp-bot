@@ -5,6 +5,7 @@ const P = require('pino');
 const fetch = require('node-fetch');
 const qrcode = require('qrcode-terminal');
 const crypto = require('crypto');
+const http = require('http');
 
 // Bot Creator Info
 const CREATOR_INFO = {
@@ -574,29 +575,36 @@ function formatCategoryHelp(category) {
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 10;
 const RECONNECT_DELAY = 5000; // 5 seconds
+let isConnected = false;
+let connectionStartTime = Date.now();
+let lastHeartbeat = Date.now();
 
 function startKeepAlive(sock) {
     console.log('🔄 Starting enhanced keep-alive mechanism...');
     
-    // Send a heartbeat every 3 minutes (more frequent)
+    // Send a heartbeat every 2 minutes (more frequent for Render)
     const heartbeatInterval = setInterval(async () => {
         try {
-            if (sock.user && sock.user.id) {
+            if (sock.user && sock.user.id && isConnected) {
                 // Update status to show bot is active
                 await sock.updateProfileStatus('🤖 BIG TENNET Bot - Online');
+                lastHeartbeat = Date.now();
                 console.log('💓 Heartbeat sent - Bot is alive');
+                
+                // Check connection health
+                await checkConnectionHealth(sock);
             }
         } catch (error) {
             console.log('❌ Heartbeat failed:', error.message);
             // If heartbeat fails, it might indicate connection issues
-            checkConnectionHealth(sock);
+            await handleConnectionIssue(sock, error);
         }
-    }, 3 * 60 * 1000); // 3 minutes
+    }, 2 * 60 * 1000); // 2 minutes
     
-    // Send a ping message to yourself every 10 minutes
+    // Send a ping message to yourself every 5 minutes
     const pingInterval = setInterval(async () => {
         try {
-            if (sock.user && sock.user.id) {
+            if (sock.user && sock.user.id && isConnected) {
                 const botNumber = sock.user.id.split(':')[0];
                 const botJid = `${botNumber}@s.whatsapp.net`;
                 
@@ -608,20 +616,24 @@ function startKeepAlive(sock) {
             }
         } catch (error) {
             console.log('❌ Ping failed:', error.message);
-            checkConnectionHealth(sock);
+            await handleConnectionIssue(sock, error);
         }
-    }, 10 * 60 * 1000); // 10 minutes
-    
-    // Connection health check every 5 minutes
-    const healthCheckInterval = setInterval(() => {
-        checkConnectionHealth(sock);
     }, 5 * 60 * 1000); // 5 minutes
     
-    // Log keep-alive status every 30 minutes
+    // Connection health check every 3 minutes
+    const healthCheckInterval = setInterval(async () => {
+        await checkConnectionHealth(sock);
+    }, 3 * 60 * 1000); // 3 minutes
+    
+    // Log keep-alive status every 15 minutes
     const logInterval = setInterval(() => {
+        const uptime = getUptime();
+        const connectionTime = Math.floor((Date.now() - connectionStartTime) / 1000);
         console.log('✅ Keep-alive mechanism running - Bot connection stable');
-        console.log(`📊 Uptime: ${getUptime()}`);
-    }, 30 * 60 * 1000); // 30 minutes
+        console.log(`📊 Total uptime: ${uptime}`);
+        console.log(`🔗 Connection time: ${Math.floor(connectionTime / 60)}m ${connectionTime % 60}s`);
+        console.log(`💓 Last heartbeat: ${Math.floor((Date.now() - lastHeartbeat) / 1000)}s ago`);
+    }, 15 * 60 * 1000); // 15 minutes
     
     // Store intervals for cleanup
     sock.keepAliveIntervals = [heartbeatInterval, pingInterval, healthCheckInterval, logInterval];
@@ -643,7 +655,25 @@ async function checkConnectionHealth(sock) {
         }
     } catch (error) {
         console.log('❌ Connection health check failed:', error.message);
+        await handleConnectionIssue(sock, error);
         return false;
+    }
+}
+
+// Handle connection issues
+async function handleConnectionIssue(sock, error) {
+    console.log('🚨 Connection issue detected:', error.message);
+    
+    // Check if it's a connection closed error
+    if (error.message.includes('Connection Closed') || 
+        error.message.includes('statusCode: 428') ||
+        error.message.includes('Precondition Required')) {
+        
+        console.log('🔍 Detected connection drop, attempting recovery...');
+        isConnected = false;
+        
+        // Try to reconnect
+        await reconnectBot();
     }
 }
 
@@ -666,6 +696,11 @@ async function reconnectBot() {
     reconnectAttempts++;
     console.log(`🔄 Reconnection attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
     
+    // Clear existing intervals
+    if (global.currentSock && global.currentSock.keepAliveIntervals) {
+        global.currentSock.keepAliveIntervals.forEach(interval => clearInterval(interval));
+    }
+    
     setTimeout(() => {
         console.log('🔄 Attempting to reconnect...');
         startBot();
@@ -675,7 +710,14 @@ async function reconnectBot() {
 // Process error handling
 process.on('uncaughtException', (error) => {
     console.log('❌ Uncaught Exception:', error);
+    console.log('🔍 Error stack:', error.stack);
     console.log('🔄 Restarting bot in 10 seconds...');
+    
+    // Clean up intervals
+    if (global.currentSock && global.currentSock.keepAliveIntervals) {
+        global.currentSock.keepAliveIntervals.forEach(interval => clearInterval(interval));
+    }
+    
     setTimeout(() => {
         process.exit(1);
     }, 10000);
@@ -684,6 +726,12 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason, promise) => {
     console.log('❌ Unhandled Rejection at:', promise, 'reason:', reason);
     console.log('🔄 Restarting bot in 10 seconds...');
+    
+    // Clean up intervals
+    if (global.currentSock && global.currentSock.keepAliveIntervals) {
+        global.currentSock.keepAliveIntervals.forEach(interval => clearInterval(interval));
+    }
+    
     setTimeout(() => {
         process.exit(1);
     }, 10000);
@@ -692,13 +740,44 @@ process.on('unhandledRejection', (reason, promise) => {
 // Graceful shutdown
 process.on('SIGINT', () => {
     console.log('🛑 Received SIGINT. Graceful shutdown...');
+    
+    // Clean up intervals
+    if (global.currentSock && global.currentSock.keepAliveIntervals) {
+        global.currentSock.keepAliveIntervals.forEach(interval => clearInterval(interval));
+    }
+    
     process.exit(0);
 });
 
 process.on('SIGTERM', () => {
     console.log('🛑 Received SIGTERM. Graceful shutdown...');
+    
+    // Clean up intervals
+    if (global.currentSock && global.currentSock.keepAliveIntervals) {
+        global.currentSock.keepAliveIntervals.forEach(interval => clearInterval(interval));
+    }
+    
     process.exit(0);
 });
+
+// Memory monitoring
+setInterval(() => {
+    const memUsage = process.memoryUsage();
+    const memMB = {
+        rss: Math.round(memUsage.rss / 1024 / 1024),
+        heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+        heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
+        external: Math.round(memUsage.external / 1024 / 1024)
+    };
+    
+    console.log(`📊 Memory Usage: RSS: ${memMB.rss}MB, Heap: ${memMB.heapUsed}/${memMB.heapTotal}MB, External: ${memMB.external}MB`);
+    
+    // Restart if memory usage is too high (over 500MB RSS)
+    if (memMB.rss > 500) {
+        console.log('⚠️ High memory usage detected, restarting bot...');
+        process.exit(1);
+    }
+}, 30 * 60 * 1000); // Check every 30 minutes
 
 // DB file path
 const DB_PATH = path.join(__dirname, 'db.json');
@@ -774,8 +853,20 @@ async function startBot() {
     const sock = makeWASocket({
         version,
         auth: state,
-        logger: P({ level: 'silent' })
+        logger: P({ level: 'silent' }),
+        // Enhanced connection options for Render
+        connectTimeoutMs: 60000,
+        keepAliveIntervalMs: 25000,
+        retryRequestDelayMs: 2000,
+        maxRetries: 5,
+        // Add connection headers
+        headers: {
+            'User-Agent': 'WhatsApp/2.23.24.78 A'
+        }
     });
+
+    // Store sock globally for cleanup
+    global.currentSock = sock;
 
     sock.ev.on('creds.update', saveCreds);
 
@@ -789,10 +880,18 @@ async function startBot() {
         }
         
         if (connection === 'close') {
+            isConnected = false;
             const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
             if (shouldReconnect) {
                 console.log('❌ Connection closed, attempting to reconnect...');
                 console.log('🔍 Disconnect reason:', lastDisconnect?.error?.output?.statusCode);
+                console.log('🔍 Error details:', lastDisconnect?.error?.message);
+                
+                // Clear keep-alive intervals
+                if (sock.keepAliveIntervals) {
+                    sock.keepAliveIntervals.forEach(interval => clearInterval(interval));
+                }
+                
                 reconnectBot();
             } else {
                 console.log('❌ Connection closed permanently (logged out)');
@@ -802,10 +901,15 @@ async function startBot() {
                 }, 30000);
             }
         } else if (connection === 'open') {
+            isConnected = true;
+            connectionStartTime = Date.now();
+            lastHeartbeat = Date.now();
+            
             console.log('✅ WhatsApp bot is connected and ready!');
             console.log(`👨‍💻 Created by: ${CREATOR_INFO.name}`);
             console.log(`🌐 Website: ${CREATOR_INFO.website}`);
             console.log(`📊 Bot started at: ${new Date().toLocaleString()}`);
+            console.log(`🔗 Connection established at: ${new Date().toLocaleString()}`);
             
             // Reset reconnection attempts on successful connection
             reconnectAttempts = 0;
@@ -2780,4 +2884,46 @@ async function handleListSudo(sock, msg) {
     }
 }
 
-startBot(); 
+startBot();
+
+// Health check server for Render
+const PORT = process.env.PORT || 3000;
+const server = http.createServer((req, res) => {
+    if (req.url === '/health') {
+        const healthData = {
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+            memory: process.memoryUsage(),
+            isConnected: isConnected,
+            reconnectAttempts: reconnectAttempts,
+            connectionTime: connectionStartTime ? Date.now() - connectionStartTime : 0,
+            lastHeartbeat: lastHeartbeat ? Date.now() - lastHeartbeat : 0
+        };
+        
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(healthData, null, 2));
+    } else if (req.url === '/') {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(`
+            <html>
+                <head><title>BIG TENNET WhatsApp Bot</title></head>
+                <body>
+                    <h1>🤖 BIG TENNET WhatsApp Bot</h1>
+                    <p>Status: ${isConnected ? '🟢 Connected' : '🔴 Disconnected'}</p>
+                    <p>Uptime: ${Math.floor(process.uptime() / 60)} minutes</p>
+                    <p>Memory: ${Math.round(process.memoryUsage().rss / 1024 / 1024)}MB</p>
+                    <p><a href="/health">Health Check</a></p>
+                </body>
+            </html>
+        `);
+    } else {
+        res.writeHead(404);
+        res.end('Not Found');
+    }
+});
+
+server.listen(PORT, () => {
+    console.log(`🌐 Health check server running on port ${PORT}`);
+    console.log(`🔗 Health endpoint: http://localhost:${PORT}/health`);
+}); 

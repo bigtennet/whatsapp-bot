@@ -1,259 +1,190 @@
 # 🤖 BIG TENNET WhatsApp Bot
 
-A feature-rich WhatsApp bot built with Baileys library, featuring 50+ commands, games, group management, and more!
+A feature-rich WhatsApp bot built with Baileys library, featuring media unlocking, sticker creation, games, group management, and more.
 
 ## ✨ Features
 
-- 🎮 **10+ Multiplayer Games** (Wordle, Hangman, Tic Tac Toe, etc.)
-- 🔓 **View-Once Media Unlocker** - Never lose important media again!
-- 🎨 **Sticker Creator** - Convert images/videos to stickers
-- 🛡️ **Group Protection** - Anti-spam and anti-link features
-- 📊 **XP & Ranking System** - Gamify your group interactions
-- 📋 **Poll System** - Create polls and vote
-- 🌤️ **Weather & Info** - Get weather, country info, crypto prices
-- 🎯 **50+ Commands** - Utility, fun, games, and group management
-- 💬 **Private & Group Support** - Works in both chat types
+- **🔓 View-Once Unlocking**: Automatically unlocks view-once media
+- **🎨 Sticker Creation**: Convert images/videos to stickers
+- **🎮 Games**: Wordle, Hangman, Tic Tac Toe, and more
+- **🛡️ Group Protection**: Anti-spam and anti-link features
+- **👥 Group Management**: Kick, ban, promote, demote users
+- **🔧 Utility Commands**: Weather, crypto, password generator, etc.
+- **🎯 Entertainment**: Jokes, quotes, trivia, facts
+- **🔐 Sudo System**: Multi-user admin permissions
 
-## 🚀 Quick Deploy
-
-### Option 1: Railway (Recommended)
-
-1. **Fork this repository** to your GitHub account
-2. Go to [railway.app](https://railway.app) and sign up
-3. Click "New Project" → "Deploy from GitHub repo"
-4. Select your forked repository
-5. Railway will automatically detect it's a Node.js app
-6. Click "Deploy Now"
-7. Once deployed, click on your project
-8. Go to "Variables" tab and add any environment variables if needed
-9. The bot will start automatically!
-
-### Option 2: Render
-
-1. **Fork this repository** to your GitHub account
-2. Go to [render.com](https://render.com) and sign up
-3. Click "New" → "Web Service"
-4. Connect your GitHub repository
-5. Configure:
-   - **Name**: `whatsapp-bot`
-   - **Build Command**: `npm install`
-   - **Start Command**: `node bot.js`
-6. Click "Create Web Service"
-7. Render will deploy your bot automatically!
-
-### Option 3: Heroku
-
-1. **Fork this repository** to your GitHub account
-2. Go to [heroku.com](https://heroku.com) and sign up
-3. Create a new app
-4. Go to "Deploy" tab → "GitHub"
-5. Connect your repository and deploy
-6. The Procfile is already included!
-
-## 📱 Local Setup
+## 🚀 Deployment on Render
 
 ### Prerequisites
-- Node.js 16+ installed
-- WhatsApp account for the bot
+- GitHub account
+- Render account
+- WhatsApp number for the bot
 
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/whatsapp-bot.git
-   cd whatsapp-bot
+### Step 1: Prepare Your Bot
+1. Set your phone number in `bot.js`:
+   ```javascript
+   const BOT_OWNER = 'YOUR_PHONE_NUMBER@s.whatsapp.net';
    ```
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+2. Make sure all dependencies are in `package.json`
 
-3. **Run the bot**
-   ```bash
-   npm start
-   ```
+### Step 2: Deploy to Render
+1. **Connect to GitHub**:
+   - Go to [Render Dashboard](https://dashboard.render.com)
+   - Click "New +" → "Web Service"
+   - Connect your GitHub repository
 
-4. **Scan QR Code**
-   - A QR code will appear in your terminal
-   - Scan it with your WhatsApp mobile app
-   - The bot will connect and be ready to use!
+2. **Configure the Service**:
+   - **Name**: `whatsapp-bot` (or your preferred name)
+   - **Environment**: `Node`
+   - **Build Command**: `npm install`
+   - **Start Command**: `node bot.js`
+   - **Plan**: Free (or paid for better performance)
 
-## 🎯 Available Commands
+3. **Environment Variables** (if needed):
+   - Add any API keys or configuration
 
-### 📋 Help Commands
-- `!help` - Get general help
-- `!help <command>` - Get detailed help for a specific command
-- `!list` - Show all available commands
-- `!list <category>` - Show commands by category
+4. **Deploy**:
+   - Click "Create Web Service"
+   - Wait for the build to complete
 
-### 🎮 Games
-- `!wordle` - Play Wordle
-- `!hangman` - Play Hangman
-- `!tictactoe` - Play Tic Tac Toe
-- `!numberguess` - Number guessing game
-- `!wordchain` - Word chain game
-- `!emojiquiz` - Emoji quiz
-- `!riddle` - Random riddles
-- `!truthordare` - Truth or Dare
-- `!wouldyourather` - Would You Rather questions
-- `!neverhaveiever` - Never Have I Ever statements
-- `!typinggame` - Typing speed game
+### Step 3: Connect Your Bot
+1. **Scan QR Code**:
+   - Check the Render logs for the QR code
+   - Scan with your WhatsApp number
+   - The bot will connect automatically
 
-### 🛠️ Utility Commands
-- `!ping` - Check if bot is online
-- `!time` - Get current time
-- `!weather <city>` - Get weather information
-- `!shorten <url>` - Shorten URLs
-- `!password [length]` - Generate random passwords
-- `!uuid` - Generate UUID
-- `!roll [sides]` - Roll dice
-- `!reverse <text>` - Reverse text
-- `!capitalize <text>` - Capitalize text
-- `!palindrome <text>` - Check if text is palindrome
+2. **Test the Bot**:
+   - Send `!ping` to test connectivity
+   - Send `!help` to see all commands
 
-### 🎨 Media Commands
-- `!sticker` - Convert image/video to sticker (reply to media)
-- `!vv` - Unlock view-once media (reply to view-once message)
-- `!viewonce` - Get info about view-once feature
+## 🔧 Enhanced Features for Render
 
-### 🎭 Fun Commands
-- `!motivate` - Get motivational quotes
-- `!joke` - Get random jokes
-- `!quote` - Get inspirational quotes
-- `!trivia` - Random trivia questions
+### Connection Stability
+- **2-minute heartbeats**: Keeps connection alive
+- **5-minute pings**: Maintains active connection
+- **Automatic reconnection**: Handles connection drops
+- **Memory monitoring**: Prevents memory leaks
+- **Graceful shutdown**: Clean process termination
+
+### Health Monitoring
+- **Health endpoint**: `https://your-app.onrender.com/health`
+- **Status page**: `https://your-app.onrender.com/`
+- **Real-time monitoring**: Connection status, uptime, memory usage
+
+## 📋 Available Commands
+
+### Utility Commands
+- `!ping` - Check bot status
+- `!help` - Show help information
+- `!time` - Current server time
+- `!weather <city>` - Weather information
+- `!crypto <coin>` - Cryptocurrency prices
+- `!password [length]` - Generate secure password
+
+### Entertainment
+- `!joke` - Random jokes
+- `!quote` - Inspirational quotes
 - `!fact` - Random facts
-- `!catfact` - Cat facts
-- `!dogfact` - Dog facts
-- `!bible` - Random Bible verses
-- `!coin` - Flip a coin
+- `!motivate` - Motivational quotes
+- `!trivia` - Trivia questions
+
+### Games
+- `!wordle [guess]` - Play Wordle
+- `!hangman [letter]` - Play Hangman
+- `!tictactoe <position>` - Play Tic Tac Toe
 - `!rps <rock|paper|scissors>` - Rock Paper Scissors
 
-### 📊 Group Commands
-- `!tagall` - Tag all group members
-- `!poll <question>` - Create a poll
-- `!vote <number>` - Vote in poll
-- `!xp` - Earn XP points
-- `!rank` - Check your rank
-- `!groupinfo` - Get group information
-- `!antispam <on|off>` - Configure anti-spam
-- `!antilink <on|off>` - Configure anti-link
+### Media Features
+- `!sticker` - Convert image/video to sticker (reply to media)
+- `!vv` - Manually unlock view-once media (reply to media)
 
-### 👑 Admin Commands
+### Group Management (Group only)
+- `!tagall` - Tag all members
 - `!kick @user` - Kick user from group
-- `!add <phone>` - Add user to group
 - `!promote @user` - Promote user to admin
-- `!demote @user` - Demote admin to member
-- `!ban @user` - Ban user from group
-- `!unban <phone>` - Unban user
-- `!setname <name>` - Change group name
-- `!setdesc <description>` - Change group description
+- `!groupinfo` - Group information
+- `!antispam <on|off>` - Toggle anti-spam
+- `!antilink <on|off>` - Toggle anti-link
 
-### 🔐 Sudo Commands (Owner Only)
-- `!addsudo @user` - Add user to sudo permissions (bot admin)
-- `!removesudo @user` - Remove user from sudo permissions
-- `!listsudo` - List all sudo users
-- `!owner` - Check if you are the bot owner
+### Admin Commands (Owner only)
+- `!addsudo @user` - Add sudo user
+- `!removesudo @user` - Remove sudo user
+- `!listsudo` - List sudo users
+- `!owner` - Check owner status
 
-**Note:** 
-- **By default, only the bot owner can use the bot**
-- Sudo users can use all bot commands in groups
-- You must add users as sudo to give them access to the bot
+## 🛠️ Troubleshooting
 
-## 🔧 Configuration
+### Connection Issues
+1. **Bot not connecting**:
+   - Check Render logs for QR code
+   - Ensure phone number is correct in `bot.js`
+   - Wait for automatic reconnection
 
-### Setting Up Bot Owner (Required)
+2. **Frequent disconnections**:
+   - The enhanced keep-alive should handle this
+   - Check memory usage in health endpoint
+   - Monitor Render logs for errors
 
-**IMPORTANT:** You must set your phone number as the bot owner before anyone can use the bot!
+3. **Commands not working**:
+   - Send `!ping` to test basic connectivity
+   - Check if you're authorized (owner or sudo user)
+   - Use `!debug` for detailed information
 
-1. **Open `bot.js`** and find this line:
-   ```javascript
-   const BOT_OWNER = 'YOUR_PHONE_NUMBER@s.whatsapp.net'; // e.g., '2348124269148@s.whatsapp.net'
-   ```
+### Render-Specific Issues
+1. **Build failures**:
+   - Check `package.json` has all dependencies
+   - Ensure Node.js version is compatible
+   - Review build logs for errors
 
-2. **Replace `YOUR_PHONE_NUMBER`** with your actual phone number:
-   ```javascript
-   const BOT_OWNER = '2348124269148@s.whatsapp.net'; // Replace with your number
-   ```
+2. **Service not starting**:
+   - Verify start command: `node bot.js`
+   - Check environment variables
+   - Review startup logs
 
-3. **Format:** Use your country code + phone number without any special characters
-   - Example: `2348124269148@s.whatsapp.net`
-   - No spaces, dashes, or parentheses
+3. **Memory issues**:
+   - Bot automatically restarts if memory > 500MB
+   - Monitor via health endpoint
+   - Consider upgrading to paid plan
 
-4. **Restart the bot** after making this change
+## 📊 Monitoring
 
-5. **Test:** Use `!owner` command to verify you're set as the bot owner
-
-**Security:** By default, only you (the bot owner) can use the bot. You must manually add other users with `!addsudo @user` to give them access.
-
-### Environment Variables (Optional)
-Create a `.env` file in the root directory:
-
-```env
-# Optional: Set custom bot name
-BOT_NAME=BIG TENNET Bot
-
-# Optional: Set custom prefix (default is !)
-COMMAND_PREFIX=!
+### Health Check Endpoint
+```bash
+curl https://your-app.onrender.com/health
 ```
 
-## 📁 Project Structure
+Response includes:
+- Connection status
+- Uptime
+- Memory usage
+- Reconnection attempts
+- Last heartbeat time
 
-```
-whatsapp-bot/
-├── bot.js              # Main bot file
-├── package.json        # Dependencies and scripts
-├── Procfile           # Heroku deployment
-├── .gitignore         # Git ignore rules
-├── README.md          # This file
-├── auth_info/         # WhatsApp session data (auto-generated)
-└── db.json           # Database file (auto-generated)
-```
+### Logs
+- Check Render dashboard for real-time logs
+- Monitor for connection drops and recoveries
+- Watch for memory usage patterns
 
-## 🛡️ Security Features
+## 🔄 Updates
 
-- **Anti-Spam Protection** - Automatically removes spammers
-- **Anti-Link Protection** - Removes users who share links
-- **Group Management** - Full admin command support
-- **Session Security** - Secure WhatsApp session handling
+To update your bot:
+1. Make changes to your code
+2. Commit and push to GitHub
+3. Render will automatically redeploy
+4. Monitor the deployment logs
 
-## 🎨 Customization
+## 📞 Support
 
-The bot includes your branding:
 - **Creator**: BIG TENNET
 - **Instagram**: @bigtennet
 - **Website**: https://tennetteam.com
-
-All responses include your creator information and social media links.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+- **TikTok**: @therealbigtennet
 
 ## 📄 License
 
-This project is licensed under the MIT License.
-
-## 🆘 Support
-
-If you need help:
-1. Check the `!help` command in the bot
-2. Review this README
-3. Open an issue on GitHub
-
-## 🙏 Credits
-
-- **Creator**: BIG TENNET
-- **Library**: [@whiskeysockets/baileys](https://github.com/whiskeysockets/baileys)
-- **Inspired by**: WhatsApp Web API
+This project is created by BIG TENNET. All rights reserved.
 
 ---
 
-**Made with ❤️ by BIG TENNET**
-
-📱 Instagram: [@bigtennet](https://instagram.com/bigtennet)  
-🌐 Website: [tennetteam.com](https://tennetteam.com) 
+**Note**: This bot is designed for personal use. Please respect WhatsApp's terms of service and use responsibly. 
