@@ -15,61 +15,176 @@ const CREATOR_INFO = {
     website: "https://tennetteam.com"
 };
 
-// Sudo users system
-let sudoUsers = new Set();
+// Sudo users system - JSON-based with persistence
+const SUDO_FILE_PATH = path.join(__dirname, 'sudo_users.json');
 
-// Bot owner configuration - Replace with your actual phone number
-const BOT_OWNER = '2348124269148@s.whatsapp.net'; // e.g., '2348124269148@s.whatsapp.net'
+// Bot owner configuration
+const BOT_OWNER = '2348124269148@s.whatsapp.net';
 
-// Load sudo users from database
+// Load sudo users from JSON file
 function loadSudoUsers() {
     try {
-        const db = loadDB();
-        if (db.sudoUsers) {
-            sudoUsers = new Set(db.sudoUsers);
+        if (fs.existsSync(SUDO_FILE_PATH)) {
+            const sudoData = JSON.parse(fs.readFileSync(SUDO_FILE_PATH, 'utf8'));
+            console.log('✅ Loaded sudo users from JSON file');
+            console.log(`👑 Bot owner: ${sudoData.bot_owner}`);
+            console.log(`🔓 Global sudo users: ${sudoData.global_sudo_users.length}`);
+            console.log(`📊 Group sudo users: ${Object.keys(sudoData.group_sudo_users).length} groups`);
+            return sudoData;
+        } else {
+            // Create default sudo file
+            const defaultSudoData = {
+                global_sudo_users: [BOT_OWNER],
+                group_sudo_users: {},
+                bot_owner: BOT_OWNER,
+                last_updated: new Date().toISOString()
+            };
+            saveSudoUsers(defaultSudoData);
+            console.log('✅ Created new sudo users file with bot owner');
+            return defaultSudoData;
         }
     } catch (e) {
-        console.log('No sudo users found, starting fresh');
-        sudoUsers = new Set();
-    }
-    
-    // Always add bot owner as sudo user
-    if (BOT_OWNER !== 'YOUR_PHONE_NUMBER@s.whatsapp.net') {
-        sudoUsers.add(BOT_OWNER);
-        console.log(`✅ Bot owner ${BOT_OWNER} automatically added as sudo user`);
+        console.error('❌ Error loading sudo users:', e);
+        // Return default data if file is corrupted
+        return {
+            global_sudo_users: [BOT_OWNER],
+            group_sudo_users: {},
+            bot_owner: BOT_OWNER,
+            last_updated: new Date().toISOString()
+        };
     }
 }
 
-// Save sudo users to database
-function saveSudoUsers() {
+// Save sudo users to JSON file
+function saveSudoUsers(sudoData) {
     try {
-        const db = loadDB();
-        db.sudoUsers = Array.from(sudoUsers);
-        saveDB(db);
+        sudoData.last_updated = new Date().toISOString();
+        fs.writeFileSync(SUDO_FILE_PATH, JSON.stringify(sudoData, null, 2));
+        console.log('✅ Sudo users saved to JSON file');
     } catch (e) {
-        console.error('Failed to save sudo users:', e);
+        console.error('❌ Failed to save sudo users:', e);
     }
 }
 
-// Check if user has sudo permissions
-function isSudoUser(userId) {
-    return sudoUsers.has(userId);
+// Check if user has global sudo permissions
+function isGlobalSudoUser(userId) {
+    const sudoData = loadSudoUsers();
+    return sudoData.global_sudo_users.includes(userId);
+}
+
+// Check if user has sudo permissions in a specific group
+function isGroupSudoUser(userId, groupId) {
+    const sudoData = loadSudoUsers();
+    return sudoData.group_sudo_users[groupId] && sudoData.group_sudo_users[groupId].includes(userId);
+}
+
+// Check if user has sudo permissions (global or group)
+function isSudoUser(userId, groupId = null) {
+    if (isGlobalSudoUser(userId)) {
+        return true;
+    }
+    if (groupId && isGroupSudoUser(userId, groupId)) {
+        return true;
+    }
+    return false;
 }
 
 // Check if user is bot owner
 function isBotOwner(userId) {
-    return userId === BOT_OWNER;
+    const sudoData = loadSudoUsers();
+    return userId === sudoData.bot_owner;
 }
 
 // Check if user can use the bot (bot owner or sudo user)
-function canUseBot(userId) {
-    // TEMPORARY: If bot owner is not set, allow everyone to use the bot
-    if (BOT_OWNER === 'YOUR_PHONE_NUMBER@s.whatsapp.net') {
-        console.log('⚠️ Bot owner not set - allowing all users temporarily');
+function canUseBot(userId, groupId = null) {
+    // Bot owner can always use the bot
+    if (isBotOwner(userId)) {
         return true;
     }
     
-    return isBotOwner(userId) || isSudoUser(userId);
+    // Check global sudo permissions
+    if (isGlobalSudoUser(userId)) {
+        return true;
+    }
+    
+    // Check group-specific sudo permissions
+    if (groupId && isGroupSudoUser(userId, groupId)) {
+        return true;
+    }
+    
+    // If no group specified, check global permissions only
+    if (!groupId) {
+        return isGlobalSudoUser(userId);
+    }
+    
+    return false;
+}
+
+// Add global sudo user
+function addGlobalSudoUser(userId) {
+    const sudoData = loadSudoUsers();
+    if (!sudoData.global_sudo_users.includes(userId)) {
+        sudoData.global_sudo_users.push(userId);
+        saveSudoUsers(sudoData);
+        console.log(`✅ Added ${userId} as global sudo user`);
+        return true;
+    }
+    return false;
+}
+
+// Remove global sudo user
+function removeGlobalSudoUser(userId) {
+    const sudoData = loadSudoUsers();
+    const index = sudoData.global_sudo_users.indexOf(userId);
+    if (index > -1) {
+        sudoData.global_sudo_users.splice(index, 1);
+        saveSudoUsers(sudoData);
+        console.log(`✅ Removed ${userId} from global sudo users`);
+        return true;
+    }
+    return false;
+}
+
+// Add group sudo user
+function addGroupSudoUser(userId, groupId) {
+    const sudoData = loadSudoUsers();
+    if (!sudoData.group_sudo_users[groupId]) {
+        sudoData.group_sudo_users[groupId] = [];
+    }
+    if (!sudoData.group_sudo_users[groupId].includes(userId)) {
+        sudoData.group_sudo_users[groupId].push(userId);
+        saveSudoUsers(sudoData);
+        console.log(`✅ Added ${userId} as sudo user in group ${groupId}`);
+        return true;
+    }
+    return false;
+}
+
+// Remove group sudo user
+function removeGroupSudoUser(userId, groupId) {
+    const sudoData = loadSudoUsers();
+    if (sudoData.group_sudo_users[groupId]) {
+        const index = sudoData.group_sudo_users[groupId].indexOf(userId);
+        if (index > -1) {
+            sudoData.group_sudo_users[groupId].splice(index, 1);
+            saveSudoUsers(sudoData);
+            console.log(`✅ Removed ${userId} from sudo users in group ${groupId}`);
+            return true;
+        }
+    }
+    return false;
+}
+
+// Get all sudo users (global and group)
+function getAllSudoUsers(groupId = null) {
+    const sudoData = loadSudoUsers();
+    const allSudoUsers = [...sudoData.global_sudo_users];
+    
+    if (groupId && sudoData.group_sudo_users[groupId]) {
+        allSudoUsers.push(...sudoData.group_sudo_users[groupId]);
+    }
+    
+    return [...new Set(allSudoUsers)]; // Remove duplicates
 }
 
 // Check if user is admin or sudo user
@@ -863,7 +978,8 @@ if (!fs.existsSync(DB_PATH)) {
 }
 
 // Load sudo users on startup
-loadSudoUsers();
+const initialSudoData = loadSudoUsers();
+console.log('🚀 Sudo system initialized with JSON persistence');
 
 function loadDB() {
     return JSON.parse(fs.readFileSync(DB_PATH));
@@ -1582,13 +1698,21 @@ async function handleMessage(sock, msg) {
         
         // Check if user can use the bot (bot owner or sudo user)
         const userId = msg.key.participant || msg.key.remoteJid;
-        if (!canUseBot(userId)) {
-            console.log(`❌ User ${userId} not authorized to use bot`);
+        const groupId = isGroup ? msg.key.remoteJid : null;
+        
+        if (!canUseBot(userId, groupId)) {
+            console.log(`❌ User ${userId} not authorized to use bot in ${isGroup ? 'group' : 'private chat'}`);
+            console.log(`🔍 User ID: ${userId}`);
+            console.log(`🔍 Group ID: ${groupId}`);
+            console.log(`🔍 Is Bot Owner: ${isBotOwner(userId)}`);
+            console.log(`🔍 Is Global Sudo: ${isGlobalSudoUser(userId)}`);
+            console.log(`🔍 Is Group Sudo: ${groupId ? isGroupSudoUser(userId, groupId) : 'N/A'}`);
+            
             await reply(sock, msg, `${BOT_STYLES.header}🔒 *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n❌ You are not authorized to use this bot.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}\n🌐 Website: ${CREATOR_INFO.website}\n\n🔐 *Only authorized users can use this bot*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
             return;
         }
         
-        console.log(`✅ User ${userId} authorized to use bot`);
+        console.log(`✅ User ${userId} authorized to use bot in ${isGroup ? 'group' : 'private chat'}`);
         
         // Add a simple test response for any command
         if (cmd.toLowerCase() === '!ping') {
@@ -1907,10 +2031,18 @@ async function handleMessage(sock, msg) {
                 break;
             case '!owner':
                 const ownerUserId = msg.key.participant || msg.key.remoteJid;
+                const sudoData = loadSudoUsers();
+                const isGroup = msg.key.remoteJid.endsWith('@g.us');
+                const groupId = isGroup ? msg.key.remoteJid : null;
+                
                 if (isBotOwner(ownerUserId)) {
-                    await reply(sock, msg, `${BOT_STYLES.header}👑 *BOT OWNER INFO*\n${BOT_STYLES.divider}\n\n✅ *You are the bot owner!*\n📱 *Your ID:* ${ownerUserId}\n🔐 *Permissions:* Full access to all commands\n\n💫 *You can:*\n• Add/remove sudo users\n• Use all bot commands\n• Manage bot permissions${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+                    await reply(sock, msg, `${BOT_STYLES.header}👑 *BOT OWNER INFO*\n${BOT_STYLES.divider}\n\n✅ *You are the bot owner!*\n📱 *Your ID:* ${ownerUserId}\n🔐 *Permissions:* Full access to all commands\n\n💫 *You can:*\n• Add/remove global sudo users\n• Use all bot commands\n• Manage bot permissions\n• Access all groups\n\n📊 *Current Status:*\n• Global Sudo Users: ${sudoData.global_sudo_users.length}\n• Group Sudo Groups: ${Object.keys(sudoData.group_sudo_users).length}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+                } else if (isGlobalSudoUser(ownerUserId)) {
+                    await reply(sock, msg, `${BOT_STYLES.header}🔓 *GLOBAL SUDO USER INFO*\n${BOT_STYLES.divider}\n\n✅ *You are a global sudo user!*\n📱 *Your ID:* ${ownerUserId}\n🔐 *Permissions:* Admin access in all groups\n\n💫 *You can:*\n• Use admin commands in all groups\n• Access all bot features\n• Manage groups you're admin in\n\n👑 *Bot Owner:* ${sudoData.bot_owner}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+                } else if (isGroup && isGroupSudoUser(ownerUserId, groupId)) {
+                    await reply(sock, msg, `${BOT_STYLES.header}📊 *GROUP SUDO USER INFO*\n${BOT_STYLES.divider}\n\n✅ *You are a group sudo user!*\n📱 *Your ID:* ${ownerUserId}\n🔐 *Permissions:* Admin access in this group\n\n💫 *You can:*\n• Use admin commands in this group\n• Access bot features in this group\n\n👑 *Bot Owner:* ${sudoData.bot_owner}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
                 } else {
-                    await reply(sock, msg, `${BOT_STYLES.header}👑 *BOT OWNER INFO*\n${BOT_STYLES.divider}\n\n❌ *You are not the bot owner*\n📱 *Your ID:* ${ownerUserId}\n🔐 *Bot Owner:* ${BOT_OWNER}\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+                    await reply(sock, msg, `${BOT_STYLES.header}👑 *BOT OWNER INFO*\n${BOT_STYLES.divider}\n\n❌ *You are not authorized*\n📱 *Your ID:* ${ownerUserId}\n🔐 *Bot Owner:* ${sudoData.bot_owner}\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
                 }
                 break;
             // Game commands
@@ -2916,7 +3048,7 @@ async function handleAddSudo(sock, msg, user) {
         }
         
         if (!user) {
-            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!addsudo @user\`\n🎯 *Example:* \`!addsudo @1234567890\`\n\n💫 *Add a user to sudo permissions*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!addsudo @user\`\n🎯 *Example:* \`!addsudo @1234567890\`\n\n💫 *Add a user to global sudo permissions*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
         }
         
         // Extract user ID from mention or phone number
@@ -2927,16 +3059,19 @@ async function handleAddSudo(sock, msg, user) {
             targetUserId = user.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
         }
         
-        // Check if user is already sudo
-        if (isSudoUser(targetUserId)) {
-            return await reply(sock, msg, `${BOT_STYLES.header}⚠️ *USER ALREADY SUDO*\n${BOT_STYLES.divider}\n\n👤 User is already a sudo user.\n\n💫 *Check sudo users with:* \`!listsudo\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        // Check if user is already global sudo
+        if (isGlobalSudoUser(targetUserId)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}⚠️ *USER ALREADY GLOBAL SUDO*\n${BOT_STYLES.divider}\n\n👤 User is already a global sudo user.\n\n💫 *Check sudo users with:* \`!listsudo\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
         }
         
-        // Add user to sudo
-        sudoUsers.add(targetUserId);
-        saveSudoUsers();
+        // Add user to global sudo
+        const success = addGlobalSudoUser(targetUserId);
         
-        await reply(sock, msg, `${BOT_STYLES.header}✅ *SUDO USER ADDED*\n${BOT_STYLES.divider}\n\n👤 *User:* ${user}\n🔓 *Permission:* Sudo (Bot Admin)\n\n💫 *User can now use admin commands in groups*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        if (success) {
+            await reply(sock, msg, `${BOT_STYLES.header}✅ *GLOBAL SUDO USER ADDED*\n${BOT_STYLES.divider}\n\n👤 *User:* ${user}\n🔓 *Permission:* Global Sudo (All Groups)\n\n💫 *User can now use admin commands in all groups*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *ERROR*\n${BOT_STYLES.divider}\n\nFailed to add sudo user. User might already be sudo.${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
         
     } catch (e) {
         console.error('Error adding sudo user:', e);
@@ -2954,7 +3089,7 @@ async function handleRemoveSudo(sock, msg, user) {
         }
         
         if (!user) {
-            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!removesudo @user\`\n🎯 *Example:* \`!removesudo @1234567890\`\n\n💫 *Remove a user from sudo permissions*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!removesudo @user\`\n🎯 *Example:* \`!removesudo @1234567890\`\n\n💫 *Remove a user from global sudo permissions*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
         }
         
         // Extract user ID from mention or phone number
@@ -2965,16 +3100,19 @@ async function handleRemoveSudo(sock, msg, user) {
             targetUserId = user.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
         }
         
-        // Check if user is sudo
-        if (!isSudoUser(targetUserId)) {
-            return await reply(sock, msg, `${BOT_STYLES.header}⚠️ *USER NOT SUDO*\n${BOT_STYLES.divider}\n\n👤 User is not a sudo user.\n\n💫 *Check sudo users with:* \`!listsudo\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        // Check if user is global sudo
+        if (!isGlobalSudoUser(targetUserId)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}⚠️ *USER NOT GLOBAL SUDO*\n${BOT_STYLES.divider}\n\n👤 User is not a global sudo user.\n\n💫 *Check sudo users with:* \`!listsudo\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
         }
         
-        // Remove user from sudo
-        sudoUsers.delete(targetUserId);
-        saveSudoUsers();
+        // Remove user from global sudo
+        const success = removeGlobalSudoUser(targetUserId);
         
-        await reply(sock, msg, `${BOT_STYLES.header}✅ *SUDO USER REMOVED*\n${BOT_STYLES.divider}\n\n👤 *User:* ${user}\n🔒 *Permission:* Removed\n\n💫 *User can no longer use admin commands*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        if (success) {
+            await reply(sock, msg, `${BOT_STYLES.header}✅ *GLOBAL SUDO USER REMOVED*\n${BOT_STYLES.divider}\n\n👤 *User:* ${user}\n🔒 *Permission:* Removed from Global Sudo\n\n💫 *User can no longer use admin commands globally*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *ERROR*\n${BOT_STYLES.divider}\n\nFailed to remove sudo user. User might not be sudo.${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
         
     } catch (e) {
         console.error('Error removing sudo user:', e);
@@ -2991,15 +3129,49 @@ async function handleListSudo(sock, msg) {
             return await reply(sock, msg, `${BOT_STYLES.header}❌ *ACCESS DENIED*\n${BOT_STYLES.divider}\n\n🔒 Only the bot owner can view sudo users.\n\n💡 *Contact:* ${CREATOR_INFO.name}\n📱 Instagram: @${CREATOR_INFO.ig}${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
         }
         
-        const sudoList = Array.from(sudoUsers);
+        const sudoData = loadSudoUsers();
+        const isGroup = msg.key.remoteJid.endsWith('@g.us');
+        const groupId = isGroup ? msg.key.remoteJid : null;
         
-        if (sudoList.length === 0) {
-            return await reply(sock, msg, `${BOT_STYLES.header}📋 *SUDO USERS LIST*\n${BOT_STYLES.divider}\n\n📝 *No sudo users found.*\n\n💫 *Add sudo users with:* \`!addsudo @user\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        let response = `${BOT_STYLES.header}📋 *SUDO USERS LIST*\n${BOT_STYLES.divider}\n\n`;
+        
+        // Bot Owner
+        response += `👑 *Bot Owner:*\n• ${sudoData.bot_owner.replace('@s.whatsapp.net', '')}\n\n`;
+        
+        // Global Sudo Users
+        if (sudoData.global_sudo_users.length > 0) {
+            const globalSudoList = sudoData.global_sudo_users
+                .filter(user => user !== sudoData.bot_owner) // Don't show bot owner twice
+                .map((user, index) => `${index + 1}. ${user.replace('@s.whatsapp.net', '')}`)
+                .join('\n');
+            
+            if (globalSudoList) {
+                response += `🔓 *Global Sudo Users:*\n${globalSudoList}\n\n`;
+            }
         }
         
-        const sudoListText = sudoList.map((user, index) => `${index + 1}. ${user.replace('@s.whatsapp.net', '')}`).join('\n');
+        // Group Sudo Users (if in a group)
+        if (isGroup && sudoData.group_sudo_users[groupId] && sudoData.group_sudo_users[groupId].length > 0) {
+            const groupSudoList = sudoData.group_sudo_users[groupId]
+                .map((user, index) => `${index + 1}. ${user.replace('@s.whatsapp.net', '')}`)
+                .join('\n');
+            
+            response += `📊 *Group Sudo Users:*\n${groupSudoList}\n\n`;
+        }
         
-        await reply(sock, msg, `${BOT_STYLES.header}📋 *SUDO USERS LIST*\n${BOT_STYLES.divider}\n\n${sudoListText}\n\n📊 *Total:* ${sudoList.length} sudo user(s)\n\n💫 *Manage sudo users with:*\n• \`!addsudo @user\` - Add sudo user\n• \`!removesudo @user\` - Remove sudo user${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        // Summary
+        const totalGlobalSudo = sudoData.global_sudo_users.length;
+        const totalGroupSudo = isGroup && sudoData.group_sudo_users[groupId] ? sudoData.group_sudo_users[groupId].length : 0;
+        
+        response += `📊 *Summary:*\n• Global Sudo: ${totalGlobalSudo} user(s)\n`;
+        if (isGroup) {
+            response += `• Group Sudo: ${totalGroupSudo} user(s)\n`;
+        }
+        response += `• Total: ${totalGlobalSudo + totalGroupSudo} user(s)\n\n`;
+        
+        response += `💫 *Manage sudo users with:*\n• \`!addsudo @user\` - Add global sudo user\n• \`!removesudo @user\` - Remove global sudo user${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        
+        await reply(sock, msg, response);
         
     } catch (e) {
         console.error('Error listing sudo users:', e);
