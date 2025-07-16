@@ -97,38 +97,39 @@ function isBotOwner(userId) {
 
 // Check if user can use the bot (bot owner or sudo user)
 function canUseBot(userId, groupId = null) {
+    // Normalize userId
+    userId = (userId || '').trim();
+    const sudoData = loadSudoUsers();
+    const botOwner = (sudoData.bot_owner || '').trim();
+    const globalSudoUsers = (sudoData.global_sudo_users || []).map(u => u.trim());
+    
+    // Always ensure bot owner is in global sudo users
+    if (!globalSudoUsers.includes(botOwner)) {
+        globalSudoUsers.push(botOwner);
+        sudoData.global_sudo_users = globalSudoUsers;
+        saveSudoUsers(sudoData);
+    }
+
     console.log(`🔍 Permission check for user: ${userId}`);
+    console.log(`🔍 Bot owner: ${botOwner}`);
+    console.log(`🔍 Global sudo users: ${globalSudoUsers.join(', ')}`);
     console.log(`🔍 Group ID: ${groupId}`);
-    
-    // TEMPORARY: Allow everyone to use the bot for debugging
-    console.log('⚠️ TEMPORARY: Allowing all users to use the bot for debugging');
-    return true;
-    
+
     // Bot owner can always use the bot
-    if (isBotOwner(userId)) {
+    if (userId === botOwner) {
         console.log('✅ User is bot owner');
         return true;
     }
-    
     // Check global sudo permissions
-    if (isGlobalSudoUser(userId)) {
+    if (globalSudoUsers.includes(userId)) {
         console.log('✅ User is global sudo user');
         return true;
     }
-    
     // Check group-specific sudo permissions
-    if (groupId && isGroupSudoUser(userId, groupId)) {
+    if (groupId && sudoData.group_sudo_users[groupId] && sudoData.group_sudo_users[groupId].includes(userId)) {
         console.log('✅ User is group sudo user');
         return true;
     }
-    
-    // If no group specified, check global permissions only
-    if (!groupId) {
-        const isGlobal = isGlobalSudoUser(userId);
-        console.log(`🔍 Global sudo check: ${isGlobal}`);
-        return isGlobal;
-    }
-    
     console.log('❌ User not authorized');
     return false;
 }
