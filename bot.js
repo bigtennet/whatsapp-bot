@@ -2092,7 +2092,6 @@ async function handleMessage(sock, msg) {
             case '!owner':
                 const ownerUserId = msg.key.participant || msg.key.remoteJid;
                 const sudoData = loadSudoUsers();
-                const isGroup = msg.key.remoteJid.endsWith('@g.us');
                 const groupId = isGroup ? msg.key.remoteJid : null;
                 
                 if (isBotOwner(ownerUserId)) {
@@ -3469,8 +3468,7 @@ async function handleListSudo(sock, msg) {
         // Permission check removed - anyone can view sudo users now
         
         const sudoData = loadSudoUsers();
-        const isGroup = msg.key.remoteJid.endsWith('@g.us');
-        const groupId = isGroup ? msg.key.remoteJid : null;
+        const groupId = msg.key.remoteJid.endsWith('@g.us') ? msg.key.remoteJid : null;
         
         let response = `${BOT_STYLES.header}📋 *SUDO USERS LIST*\n${BOT_STYLES.divider}\n\n`;
         
