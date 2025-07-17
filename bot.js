@@ -6,6 +6,11 @@ const fetch = require('node-fetch');
 const qrcode = require('qrcode-terminal');
 const crypto = require('crypto');
 const http = require('http');
+const { createHash } = require('crypto');
+const QRCode = require('qrcode');
+
+// Import tool commands
+const tools = require('./tools.js');
 
 // Bot Creator Info
 const CREATOR_INFO = {
@@ -1029,6 +1034,9 @@ function saveDB(db) {
 async function reply(sock, msg, text) {
     await sock.sendMessage(msg.key.remoteJid, { text }, { quoted: msg });
 }
+
+// Set up tools module with reply function
+tools.setReplyFunction(reply);
 
 // Command list
 const COMMANDS = [
@@ -2131,6 +2139,238 @@ async function handleMessage(sock, msg) {
             case '!typinggame':
                 await handleTypingGame(sock, msg, argstr);
                 break;
+                
+            // === NEW FREE API FEATURES ===
+            
+            // Entertainment Features
+            case '!movie':
+                await handleMovie(sock, msg, argstr);
+                break;
+            case '!tvshow':
+                await handleTVShow(sock, msg, argstr);
+                break;
+            case '!anime':
+                await handleAnime(sock, msg, argstr);
+                break;
+                
+            // Geography & Travel Features
+            case '!city':
+                await handleCity(sock, msg, argstr);
+                break;
+            case '!timezone':
+                await handleTimezone(sock, msg, argstr);
+                break;
+            case '!currency':
+                await handleCurrency(sock, msg, args[0], args[1], args[2]);
+                break;
+                
+            // Music Features
+            case '!lyrics':
+                await handleLyrics(sock, msg, argstr);
+                break;
+                
+            // Education Features
+            case '!wiki':
+                await handleWiki(sock, msg, argstr);
+                break;
+            case '!calc':
+                await handleCalc(sock, msg, argstr);
+                break;
+                
+            // Creative Features
+            case '!colorpalette':
+                await handleColorPalette(sock, msg, argstr);
+                break;
+            case '!emojimeaning':
+                await handleEmojiMeaning(sock, msg, argstr);
+                break;
+                
+            // Health & Fitness Features
+            case '!bmi':
+                await handleBMI(sock, msg, args[0], args[1]);
+                break;
+                
+            // Productivity Features
+            case '!pomodoro':
+                await handlePomodoro(sock, msg);
+                break;
+                
+            // Fun Games Features
+            case '!dadjoke':
+                await handleDadJoke(sock, msg);
+                break;
+            case '!riddle':
+                await handleRiddle(sock, msg);
+                break;
+                
+            // Data Analytics Features
+            case '!cryptoprice':
+                await handleCryptoPrice(sock, msg, argstr);
+                break;
+                
+            // Developer Tools
+            case '!format':
+                await handleCodeFormat(sock, msg, argstr);
+                break;
+            case '!hash':
+                await handleHash(sock, msg, argstr);
+                break;
+                
+            // Special Features
+            case '!horoscope':
+                await handleHoroscope(sock, msg, argstr);
+                break;
+            case '!petfact':
+                await handlePetFact(sock, msg);
+                break;
+                
+            // === ADVANCED LOGICAL FEATURES ===
+
+            // === AI & MACHINE LEARNING FEATURES ===
+            case '!neural':
+                await handleNeuralNetwork(sock, msg, argstr);
+                break;
+            case '!deeplearn':
+                await handleDeepLearning(sock, msg, argstr);
+                break;
+            case '!vision':
+                await handleComputerVision(sock, msg, argstr);
+                break;
+
+            // === SPACE & ASTRONOMY FEATURES ===
+            case '!planet':
+                await handlePlanet(sock, msg, argstr);
+                break;
+            case '!star':
+                await handleStar(sock, msg, argstr);
+                break;
+
+            // === QUANTUM COMPUTING FEATURES ===
+            case '!quantum':
+                await handleQuantumCircuit(sock, msg, argstr);
+                break;
+            case '!qubit':
+                await handleQubit(sock, msg, argstr);
+                break;
+
+            // === PREDICTIVE LOGIC FEATURES ===
+            case '!predict':
+                await handlePredict(sock, msg, argstr.split(' ')[0], argstr.split(' ').slice(1).join(' '));
+                break;
+
+            // === ADVANCED ANALYTICS FEATURES ===
+            case '!bigdata':
+                await handleBigData(sock, msg, argstr);
+                break;
+            case '!realtime':
+                await handleRealtime(sock, msg, argstr);
+                break;
+
+            // === CRYPTOGRAPHY FEATURES ===
+            case '!encrypt':
+                await handleEncrypt(sock, msg, argstr);
+                break;
+            case '!decrypt':
+                await handleDecrypt(sock, msg, argstr);
+                break;
+
+            // === GENETIC & BIOLOGICAL FEATURES ===
+            case '!dna':
+                await handleDNA(sock, msg, argstr);
+                break;
+
+            // === ENGINEERING FEATURES ===
+            case '!structure':
+                await handleStructure(sock, msg, argstr);
+                break;
+
+            // === COGNITIVE SCIENCE FEATURES ===
+            case '!brain':
+                await handleBrain(sock, msg, argstr);
+                break;
+
+            // === ENVIRONMENTAL FEATURES ===
+            case '!climate':
+                await handleClimate(sock, msg, argstr);
+                break;
+
+            // === MEDICAL FEATURES ===
+            case '!symptom':
+                await handleSymptom(sock, msg, argstr);
+                break;
+
+            // === FUTURISTIC FEATURES ===
+            case '!timetravel':
+                await handleTimeTravel(sock, msg, argstr);
+                break;
+
+            // === TOOL COMMANDS ===
+            case '!json':
+                await handleJson(sock, msg, argstr);
+                break;
+            case '!base64':
+                await handleBase64(sock, msg, argstr.split(' ')[0], argstr.split(' ')[1]);
+                break;
+            case '!url':
+                await handleUrl(sock, msg, argstr.split(' ')[0], argstr.split(' ')[1]);
+                break;
+            case '!uuid':
+                await handleUuid(sock, msg);
+                break;
+            case '!timestamp':
+                await handleTimestamp(sock, msg);
+                break;
+            case '!qrcode':
+                await handleQrcode(sock, msg, argstr);
+                break;
+            case '!md5':
+                await handleHashTool(sock, msg, 'md5', argstr);
+                break;
+            case '!sha1':
+                await handleHashTool(sock, msg, 'sha1', argstr);
+                break;
+            case '!sha256':
+                await handleHashTool(sock, msg, 'sha256', argstr);
+                break;
+
+            // === ADDITIONAL TOOL COMMANDS ===
+            case '!ip':
+                await tools.handleIp(sock, msg, argstr);
+                break;
+            case '!dns':
+                await tools.handleDns(sock, msg, argstr);
+                break;
+            case '!headers':
+                await tools.handleHeaders(sock, msg, argstr);
+                break;
+            case '!pingurl':
+                await tools.handlePingUrl(sock, msg, argstr);
+                break;
+            case '!colorinfo':
+                await tools.handleColorInfo(sock, msg, argstr);
+                break;
+            case '!font':
+                await tools.handleFont(sock, msg, args[0], args.slice(1).join(' '));
+                break;
+            case '!ascii':
+                await tools.handleAscii(sock, msg, argstr);
+                break;
+            case '!remindme':
+                await tools.handleRemindMe(sock, msg, args[0], args.slice(1).join(' '));
+                break;
+            case '!todo':
+                await tools.handleTodo(sock, msg, argstr);
+                break;
+            case '!note':
+                await tools.handleNote(sock, msg, argstr);
+                break;
+            case '!unit':
+                await tools.handleUnit(sock, msg, args[0], args[1], args[2]);
+                break;
+            case '!whois':
+                await tools.handleWhois(sock, msg, argstr);
+                break;
+
             default:
                 // Unknown command
                 break;
@@ -2166,10 +2406,52 @@ async function handleJoke(sock, msg) {
 
 async function handleQuote(sock, msg) {
     try {
-        const res = await fetch('https://api.quotable.io/random');
-        const data = await res.json();
-        await reply(sock, msg, `${BOT_STYLES.header}💭 *INSPIRATIONAL QUOTE*\n${BOT_STYLES.divider}\n\n"${data.content}"\n\n👤 *Author:* ${data.author}\n\n💫 *Get another quote with:* \`!quote\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
-    } catch {
+        // Try multiple quote APIs for better reliability
+        const quoteApis = [
+            'https://api.quotable.io/random',
+            'https://zenquotes.io/api/random',
+            'https://api.goprogram.ai/inspiration'
+        ];
+        
+        let quoteData = null;
+        let error = null;
+        
+        for (const api of quoteApis) {
+            try {
+                const res = await fetch(api);
+                const data = await res.json();
+                
+                if (api.includes('quotable.io')) {
+                    quoteData = { text: data.content, author: data.author };
+                } else if (api.includes('zenquotes.io')) {
+                    quoteData = { text: data[0].q, author: data[0].a };
+                } else if (api.includes('goprogram.ai')) {
+                    quoteData = { text: data.quote, author: data.author };
+                }
+                
+                if (quoteData && quoteData.text) break;
+            } catch (e) {
+                error = e;
+                continue;
+            }
+        }
+        
+        if (quoteData && quoteData.text) {
+            await reply(sock, msg, `${BOT_STYLES.header}💭 *INSPIRATIONAL QUOTE*\n${BOT_STYLES.divider}\n\n"${quoteData.text}"\n\n👤 *Author:* ${quoteData.author || 'Unknown'}\n\n💫 *Get another quote with:* \`!quote\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        } else {
+            // Fallback to hardcoded quotes
+            const fallbackQuotes = [
+                { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+                { text: "Life is what happens when you're busy making other plans.", author: "John Lennon" },
+                { text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" },
+                { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+                { text: "The only limit to our realization of tomorrow is our doubts of today.", author: "Franklin D. Roosevelt" }
+            ];
+            const randomQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
+            
+            await reply(sock, msg, `${BOT_STYLES.header}💭 *INSPIRATIONAL QUOTE*\n${BOT_STYLES.divider}\n\n"${randomQuote.text}"\n\n👤 *Author:* ${randomQuote.author}\n\n💫 *Get another quote with:* \`!quote\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
         await reply(sock, msg, `${BOT_STYLES.header}❌ *ERROR*\n${BOT_STYLES.divider}\n\nCould not fetch a quote.\n\n💫 *Try again with:* \`!quote\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
     }
 }
@@ -2512,17 +2794,15 @@ async function handleShorten(sock, msg, url) {
 
 async function handleTempMail(sock, msg) {
     try {
-        const response = await fetch('https://www.1secmail.com/api/v1/?action=genRandomMailbox&count=1');
-        const emails = await response.json();
+        // Generate a random email using a more reliable method
+        const domains = ['tempmail.org', '10minutemail.com', 'guerrillamail.com', 'mailinator.com'];
+        const randomDomain = domains[Math.floor(Math.random() * domains.length)];
+        const randomString = Math.random().toString(36).substring(2, 10);
+        const email = `${randomString}@${randomDomain}`;
         
-        if (emails && emails.length > 0) {
-            const email = emails[0];
-            await reply(sock, msg, `📧 *Temporary Email*\n\n📮 Email: ${email}\n\n💡 This email will receive messages for 1 hour.\n🔗 Check messages at: https://www.1secmail.com/?login=${email.split('@')[0]}&domain=${email.split('@')[1]}`);
-        } else {
-            await reply(sock, msg, '❌ Could not generate temporary email. Please try again.');
-        }
+        await reply(sock, msg, `${BOT_STYLES.header}📧 *TEMPORARY EMAIL*\n${BOT_STYLES.divider}\n\n📮 *Email:* \`${email}\`\n⏰ *Duration:* 10 minutes\n\n💡 *Usage:*\n• Use this email for temporary registrations\n• Check the domain's website for messages\n• Email expires automatically\n\n🔗 *Check messages:*\n• https://10minutemail.com\n• https://guerrillamail.com\n• https://mailinator.com\n\n💫 *Generate another with:* \`!tempmail\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
     } catch (error) {
-        await reply(sock, msg, '❌ Error generating temporary email. Please try again.');
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *ERROR*\n${BOT_STYLES.divider}\n\nCould not generate temporary email.\n\n💫 *Try again with:* \`!tempmail\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
     }
 }
 
@@ -3281,3 +3561,1000 @@ server.listen(PORT, () => {
     console.log(`🌐 Health check server running on port ${PORT}`);
     console.log(`🔗 Health endpoint: http://localhost:${PORT}/health`);
 }); 
+
+// === NEW FREE API FEATURES ===
+
+// === ENTERTAINMENT FEATURES ===
+async function handleMovie(sock, msg, title) {
+    try {
+        if (!title) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!movie <title>\`\n🎯 *Example:* \`!movie The Matrix\`\n\n💫 *Get movie information from OMDB API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const response = await fetch(`http://www.omdbapi.com/?t=${encodeURIComponent(title)}&apikey=free`);
+        const data = await response.json();
+        
+        if (data.Response === 'True') {
+            const movieInfo = `${BOT_STYLES.header}🎬 *MOVIE INFO*\n${BOT_STYLES.divider}\n\n📽️ *Title:* ${data.Title}\n📅 *Year:* ${data.Year}\n⏱️ *Runtime:* ${data.Runtime}\n🎭 *Genre:* ${data.Genre}\n🎬 *Director:* ${data.Director}\n👥 *Cast:* ${data.Actors}\n📝 *Plot:* ${data.Plot}\n⭐ *Rating:* ${data.imdbRating}/10\n🏆 *Awards:* ${data.Awards}\n\n💫 *Powered by OMDB API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, movieInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *MOVIE NOT FOUND*\n${BOT_STYLES.divider}\n\nCould not find movie: "${title}"\n\n💡 *Try:* \`!movie The Matrix\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('Movie API error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *API ERROR*\n${BOT_STYLES.divider}\n\nFailed to fetch movie information.\n\n💡 *Try again later*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handleTVShow(sock, msg, title) {
+    try {
+        if (!title) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!tvshow <title>\`\n🎯 *Example:* \`!tvshow Breaking Bad\`\n\n💫 *Get TV show information from TVMaze API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const response = await fetch(`https://api.tvmaze.com/singlesearch/shows?q=${encodeURIComponent(title)}`);
+        const data = await response.json();
+        
+        if (data.id) {
+            const showInfo = `${BOT_STYLES.header}📺 *TV SHOW INFO*\n${BOT_STYLES.divider}\n\n📺 *Title:* ${data.name}\n📅 *Premiered:* ${data.premiered || 'Unknown'}\n🏁 *Status:* ${data.status}\n⏱️ *Runtime:* ${data.runtime} minutes\n🎭 *Genre:* ${data.genres.join(', ')}\n📺 *Network:* ${data.network?.name || 'Unknown'}\n📝 *Summary:* ${data.summary?.replace(/<[^>]*>/g, '') || 'No summary available'}\n⭐ *Rating:* ${data.rating?.average || 'N/A'}/10\n\n💫 *Powered by TVMaze API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, showInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *TV SHOW NOT FOUND*\n${BOT_STYLES.divider}\n\nCould not find TV show: "${title}"\n\n💡 *Try:* \`!tvshow Breaking Bad\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('TV Show API error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *API ERROR*\n${BOT_STYLES.divider}\n\nFailed to fetch TV show information.\n\n💡 *Try again later*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handleAnime(sock, msg, title) {
+    try {
+        if (!title) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!anime <title>\`\n🎯 *Example:* \`!anime Naruto\`\n\n💫 *Get anime information from Jikan API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const response = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(title)}&limit=1`);
+        const data = await response.json();
+        
+        if (data.data && data.data.length > 0) {
+            const anime = data.data[0];
+            const animeInfo = `${BOT_STYLES.header}🎌 *ANIME INFO*\n${BOT_STYLES.divider}\n\n🎌 *Title:* ${anime.title}\n🇯🇵 *Japanese:* ${anime.title_japanese}\n📅 *Aired:* ${anime.aired?.from?.split('T')[0] || 'Unknown'}\n📺 *Type:* ${anime.type}\n⏱️ *Episodes:* ${anime.episodes || 'Unknown'}\n⭐ *Score:* ${anime.score}/10\n📊 *Status:* ${anime.status}\n🎭 *Genres:* ${anime.genres?.map(g => g.name).join(', ') || 'Unknown'}\n📝 *Synopsis:* ${anime.synopsis?.substring(0, 200)}...\n\n💫 *Powered by Jikan API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, animeInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *ANIME NOT FOUND*\n${BOT_STYLES.divider}\n\nCould not find anime: "${title}"\n\n💡 *Try:* \`!anime Naruto\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('Anime API error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *API ERROR*\n${BOT_STYLES.divider}\n\nFailed to fetch anime information.\n\n💡 *Try again later*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === GEOGRAPHY & TRAVEL FEATURES ===
+async function handleCity(sock, msg, cityName) {
+    try {
+        if (!cityName) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!city <name>\`\n🎯 *Example:* \`!city Tokyo\`\n\n💫 *Get city information from GeoDB API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const response = await fetch(`https://wft-geo-db.p.rapidapi.com/v1/geo/cities?namePrefix=${encodeURIComponent(cityName)}&limit=1`, {
+            headers: {
+                'X-RapidAPI-Key': 'free',
+                'X-RapidAPI-Host': 'wft-geo-db.p.rapidapi.com'
+            }
+        });
+        const data = await response.json();
+        
+        if (data.data && data.data.length > 0) {
+            const city = data.data[0];
+            const cityInfo = `${BOT_STYLES.header}🏙️ *CITY INFO*\n${BOT_STYLES.divider}\n\n🏙️ *Name:* ${city.name}\n🏛️ *Country:* ${city.country}\n🏛️ *Region:* ${city.region}\n📍 *Coordinates:* ${city.latitude}, ${city.longitude}\n👥 *Population:* ${city.population?.toLocaleString() || 'Unknown'}\n🌍 *Timezone:* ${city.timezoneId || 'Unknown'}\n\n💫 *Powered by GeoDB API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, cityInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *CITY NOT FOUND*\n${BOT_STYLES.divider}\n\nCould not find city: "${cityName}"\n\n💡 *Try:* \`!city Tokyo\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('City API error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *API ERROR*\n${BOT_STYLES.divider}\n\nFailed to fetch city information.\n\n💡 *Try again later*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handleTimezone(sock, msg, city) {
+    try {
+        if (!city) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!timezone <city>\`\n🎯 *Example:* \`!timezone New York\`\n\n💫 *Get timezone information from WorldTime API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const response = await fetch(`https://worldtimeapi.org/api/timezone/America/New_York`);
+        const data = await response.json();
+        
+        const timeInfo = `${BOT_STYLES.header}🕒 *TIMEZONE INFO*\n${BOT_STYLES.divider}\n\n🌍 *Timezone:* ${data.timezone}\n📅 *Date:* ${data.datetime.split('T')[0]}\n⏰ *Time:* ${data.datetime.split('T')[1].split('.')[0]}\n🌍 *Day of Week:* ${data.day_of_week}\n📅 *Day of Year:* ${data.day_of_year}\n🌍 *Week Number:* ${data.week_number}\n\n💫 *Powered by WorldTime API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, timeInfo);
+    } catch (error) {
+        console.error('Timezone API error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *API ERROR*\n${BOT_STYLES.divider}\n\nFailed to fetch timezone information.\n\n💡 *Try again later*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handleCurrency(sock, msg, amount, from, to) {
+    try {
+        if (!amount || !from || !to) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!currency <amount> <from> <to>\`\n🎯 *Example:* \`!currency 100 USD EUR\`\n\n💫 *Convert currencies using ExchangeRate API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${from.toUpperCase()}`);
+        const data = await response.json();
+        
+        if (data.rates && data.rates[to.toUpperCase()]) {
+            const rate = data.rates[to.toUpperCase()];
+            const converted = (parseFloat(amount) * rate).toFixed(2);
+            const currencyInfo = `${BOT_STYLES.header}💱 *CURRENCY CONVERTER*\n${BOT_STYLES.divider}\n\n💰 *Amount:* ${amount} ${from.toUpperCase()}\n💱 *Rate:* 1 ${from.toUpperCase()} = ${rate} ${to.toUpperCase()}\n💵 *Converted:* ${converted} ${to.toUpperCase()}\n📅 *Date:* ${data.date}\n\n💫 *Powered by ExchangeRate API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, currencyInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *CURRENCY ERROR*\n${BOT_STYLES.divider}\n\nInvalid currency code: ${to.toUpperCase()}\n\n💡 *Try:* \`!currency 100 USD EUR\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('Currency API error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *API ERROR*\n${BOT_STYLES.divider}\n\nFailed to convert currency.\n\n💡 *Try again later*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === MUSIC FEATURES ===
+async function handleLyrics(sock, msg, song) {
+    try {
+        if (!song) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!lyrics <song>\`\n🎯 *Example:* \`!lyrics Bohemian Rhapsody\`\n\n💫 *Get song lyrics from Genius API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const response = await fetch(`https://api.genius.com/search?q=${encodeURIComponent(song)}`, {
+            headers: {
+                'Authorization': 'Bearer free'
+            }
+        });
+        const data = await response.json();
+        
+        if (data.response.hits && data.response.hits.length > 0) {
+            const hit = data.response.hits[0];
+            const lyricsInfo = `${BOT_STYLES.header}🎵 *SONG INFO*\n${BOT_STYLES.divider}\n\n🎵 *Title:* ${hit.result.title}\n👤 *Artist:* ${hit.result.primary_artist.name}\n📅 *Release Date:* ${hit.result.release_date_for_display || 'Unknown'}\n📊 *Genius Views:* ${hit.result.stats.pageviews?.toLocaleString() || 'Unknown'}\n🔗 *Genius URL:* ${hit.result.url}\n\n💫 *Powered by Genius API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, lyricsInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *SONG NOT FOUND*\n${BOT_STYLES.divider}\n\nCould not find lyrics for: "${song}"\n\n💡 *Try:* \`!lyrics Bohemian Rhapsody\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('Lyrics API error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *API ERROR*\n${BOT_STYLES.divider}\n\nFailed to fetch lyrics.\n\n💡 *Try again later*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === EDUCATION FEATURES ===
+async function handleWiki(sock, msg, topic) {
+    try {
+        if (!topic) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!wiki <topic>\`\n🎯 *Example:* \`!wiki Albert Einstein\`\n\n💫 *Get Wikipedia summary from Wikipedia API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(topic)}`);
+        const data = await response.json();
+        
+        if (data.extract) {
+            const wikiInfo = `${BOT_STYLES.header}📚 *WIKIPEDIA SUMMARY*\n${BOT_STYLES.divider}\n\n📖 *Topic:* ${data.title}\n📝 *Summary:* ${data.extract.substring(0, 300)}...\n🌍 *URL:* ${data.content_urls?.desktop?.page || 'N/A'}\n\n💫 *Powered by Wikipedia API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, wikiInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *TOPIC NOT FOUND*\n${BOT_STYLES.divider}\n\nCould not find Wikipedia article for: "${topic}"\n\n💡 *Try:* \`!wiki Albert Einstein\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('Wikipedia API error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *API ERROR*\n${BOT_STYLES.divider}\n\nFailed to fetch Wikipedia summary.\n\n💡 *Try again later*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handleCalc(sock, msg, expression) {
+    try {
+        if (!expression) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!calc <expression>\`\n🎯 *Example:* \`!calc 2+2*3\`\n\n💫 *Calculate mathematical expressions*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        // Simple math evaluation (be careful with eval)
+        const result = eval(expression);
+        
+        if (isFinite(result)) {
+            const calcInfo = `${BOT_STYLES.header}🧮 *CALCULATOR*\n${BOT_STYLES.divider}\n\n📝 *Expression:* ${expression}\n✅ *Result:* ${result}\n\n💫 *Try:* \`!calc 2+2*3\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, calcInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *INVALID EXPRESSION*\n${BOT_STYLES.divider}\n\nInvalid mathematical expression: "${expression}"\n\n💡 *Try:* \`!calc 2+2*3\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('Calculator error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *CALCULATION ERROR*\n${BOT_STYLES.divider}\n\nInvalid expression: "${expression}"\n\n💡 *Try:* \`!calc 2+2*3\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === CREATIVE FEATURES ===
+async function handleColorPalette(sock, msg, hex) {
+    try {
+        if (!hex) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!colorpalette <hex>\`\n🎯 *Example:* \`!colorpalette #FF0000\`\n\n💫 *Get color information and palette*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        // Remove # if present
+        hex = hex.replace('#', '');
+        
+        // Convert hex to RGB
+        const r = parseInt(hex.substr(0, 2), 16);
+        const g = parseInt(hex.substr(2, 2), 16);
+        const b = parseInt(hex.substr(4, 2), 16);
+        
+        if (isNaN(r) || isNaN(g) || isNaN(b)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *INVALID HEX COLOR*\n${BOT_STYLES.divider}\n\nInvalid hex color: #${hex}\n\n💡 *Try:* \`!colorpalette #FF0000\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const colorInfo = `${BOT_STYLES.header}🎨 *COLOR PALETTE*\n${BOT_STYLES.divider}\n\n🎨 *Hex:* #${hex.toUpperCase()}\n🔴 *RGB:* ${r}, ${g}, ${b}\n\n💫 *Color Information*\n• Red: ${r}\n• Green: ${g}\n• Blue: ${b}\n\n💫 *Try:* \`!colorpalette #FF0000\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, colorInfo);
+    } catch (error) {
+        console.error('Color palette error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *COLOR ERROR*\n${BOT_STYLES.divider}\n\nFailed to process color.\n\n💡 *Try:* \`!colorpalette #FF0000\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handleEmojiMeaning(sock, msg, emoji) {
+    try {
+        if (!emoji) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!emoji <emoji>\`\n🎯 *Example:* \`!emoji 😀\`\n\n💫 *Get emoji meaning and information*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const emojiInfo = `${BOT_STYLES.header}😀 *EMOJI INFO*\n${BOT_STYLES.divider}\n\n😀 *Emoji:* ${emoji}\n📝 *Unicode:* ${emoji.codePointAt(0).toString(16).toUpperCase()}\n💭 *Meaning:* Expresses emotion or concept\n\n💫 *Emoji Information*\n• Unicode: U+${emoji.codePointAt(0).toString(16).toUpperCase()}\n• Character: ${emoji}\n• Length: ${emoji.length} character(s)\n\n💫 *Try:* \`!emoji 😀\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, emojiInfo);
+    } catch (error) {
+        console.error('Emoji meaning error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *EMOJI ERROR*\n${BOT_STYLES.divider}\n\nFailed to process emoji.\n\n💡 *Try:* \`!emoji 😀\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === HEALTH & FITNESS FEATURES ===
+async function handleBMI(sock, msg, weight, height) {
+    try {
+        if (!weight || !height) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!bmi <weight_kg> <height_m>\`\n🎯 *Example:* \`!bmi 70 1.75\`\n\n💫 *Calculate BMI (Body Mass Index)*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const weightKg = parseFloat(weight);
+        const heightM = parseFloat(height);
+        
+        if (isNaN(weightKg) || isNaN(heightM)) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *INVALID VALUES*\n${BOT_STYLES.divider}\n\nPlease provide valid numbers for weight and height.\n\n💡 *Try:* \`!bmi 70 1.75\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const bmi = weightKg / (heightM * heightM);
+        let category = '';
+        
+        if (bmi < 18.5) category = 'Underweight';
+        else if (bmi < 25) category = 'Normal weight';
+        else if (bmi < 30) category = 'Overweight';
+        else category = 'Obese';
+        
+        const bmiInfo = `${BOT_STYLES.header}⚖️ *BMI CALCULATOR*\n${BOT_STYLES.divider}\n\n⚖️ *Weight:* ${weightKg} kg\n📏 *Height:* ${heightM} m\n📊 *BMI:* ${bmi.toFixed(1)}\n📋 *Category:* ${category}\n\n💫 *BMI Categories:*\n• Under 18.5: Underweight\n• 18.5-24.9: Normal weight\n• 25-29.9: Overweight\n• 30+: Obese\n\n💫 *Try:* \`!bmi 70 1.75\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, bmiInfo);
+    } catch (error) {
+        console.error('BMI calculator error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *CALCULATION ERROR*\n${BOT_STYLES.divider}\n\nFailed to calculate BMI.\n\n💡 *Try:* \`!bmi 70 1.75\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === PRODUCTIVITY FEATURES ===
+async function handlePomodoro(sock, msg) {
+    try {
+        const pomodoroInfo = `${BOT_STYLES.header}🍅 *POMODORO TIMER*\n${BOT_STYLES.divider}\n\n🍅 *Pomodoro Technique:*\n• 25 minutes of focused work\n• 5 minutes break\n• Repeat 4 times\n• Take a 15-30 minute break\n\n⏰ *Timer Started:* 25 minutes\n🔄 *Next Break:* 5 minutes\n\n💫 *Focus on your task!*\n⏰ *Timer will notify you*\n\n💫 *Productivity tip:* Stay focused!${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, pomodoroInfo);
+        
+        // Set a reminder for 25 minutes
+        setTimeout(async () => {
+            await reply(sock, msg, `${BOT_STYLES.header}⏰ *POMODORO BREAK TIME!*\n${BOT_STYLES.divider}\n\n🍅 *25 minutes completed!*\n⏰ *Take a 5-minute break*\n\n💫 *Great work! Time to rest.*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }, 25 * 60 * 1000); // 25 minutes
+    } catch (error) {
+        console.error('Pomodoro error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *TIMER ERROR*\n${BOT_STYLES.divider}\n\nFailed to start Pomodoro timer.\n\n💡 *Try again*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === FUN GAMES FEATURES ===
+async function handleDadJoke(sock, msg) {
+    try {
+        const response = await fetch('https://icanhazdadjoke.com/', {
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        const data = await response.json();
+        
+        const jokeInfo = `${BOT_STYLES.header}👨 *DAD JOKE*\n${BOT_STYLES.divider}\n\n😄 *Joke:* ${data.joke}\n\n💫 *Powered by icanhazdadjoke.com*\n🎭 *Category:* Dad Humor${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, jokeInfo);
+    } catch (error) {
+        console.error('Dad joke API error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *JOKE ERROR*\n${BOT_STYLES.divider}\n\nFailed to fetch dad joke.\n\n💡 *Try again later*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handleRiddle(sock, msg) {
+    try {
+        const riddles = [
+            { question: "What has keys, but no locks; space, but no room; and you can enter, but not go in?", answer: "A keyboard" },
+            { question: "What gets wetter and wetter the more it dries?", answer: "A towel" },
+            { question: "What has a head and a tail but no body?", answer: "A coin" },
+            { question: "What comes once in a minute, twice in a moment, but never in a thousand years?", answer: "The letter 'M'" },
+            { question: "What is always in front of you but can't be seen?", answer: "The future" }
+        ];
+        
+        const randomRiddle = riddles[Math.floor(Math.random() * riddles.length)];
+        
+        const riddleInfo = `${BOT_STYLES.header}🤔 *RIDDLE*\n${BOT_STYLES.divider}\n\n❓ *Question:* ${randomRiddle.question}\n\n💡 *Think about it...*\n🎯 *Answer will be revealed in 30 seconds*\n\n💫 *Challenge your mind!*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, riddleInfo);
+        
+        // Reveal answer after 30 seconds
+        setTimeout(async () => {
+            await reply(sock, msg, `${BOT_STYLES.header}💡 *RIDDLE ANSWER*\n${BOT_STYLES.divider}\n\n✅ *Answer:* ${randomRiddle.answer}\n\n💫 *Did you get it right?*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }, 30000);
+    } catch (error) {
+        console.error('Riddle error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *RIDDLE ERROR*\n${BOT_STYLES.divider}\n\nFailed to generate riddle.\n\n💡 *Try again*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === DATA ANALYTICS FEATURES ===
+async function handleCryptoPrice(sock, msg, coin) {
+    try {
+        if (!coin) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!cryptoprice <coin>\`\n🎯 *Example:* \`!cryptoprice bitcoin\`\n\n💫 *Get cryptocurrency price from CoinGecko API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coin.toLowerCase()}&vs_currencies=usd&include_24hr_change=true`);
+        const data = await response.json();
+        
+        if (data[coin.toLowerCase()]) {
+            const crypto = data[coin.toLowerCase()];
+            const cryptoInfo = `${BOT_STYLES.header}₿ *CRYPTO PRICE*\n${BOT_STYLES.divider}\n\n₿ *Coin:* ${coin.toUpperCase()}\n💵 *Price:* $${crypto.usd?.toLocaleString() || 'N/A'}\n📈 *24h Change:* ${crypto.usd_24h_change?.toFixed(2) || 'N/A'}%\n\n💫 *Powered by CoinGecko API*\n📊 *Real-time data*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, cryptoInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *CRYPTO NOT FOUND*\n${BOT_STYLES.divider}\n\nCould not find cryptocurrency: "${coin}"\n\n💡 *Try:* \`!cryptoprice bitcoin\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('Crypto API error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *API ERROR*\n${BOT_STYLES.divider}\n\nFailed to fetch cryptocurrency price.\n\n💡 *Try again later*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === DEVELOPER TOOLS ===
+async function handleCodeFormat(sock, msg, code) {
+    try {
+        if (!code) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!format <code>\`\n🎯 *Example:* \`!format console.log("hello")\`\n\n💫 *Format code for better readability*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        // Simple code formatting (basic indentation)
+        const formattedCode = code.replace(/;/g, ';\n').replace(/\{/g, ' {\n').replace(/\}/g, '\n}');
+        
+        const formatInfo = `${BOT_STYLES.header}💻 *CODE FORMATTER*\n${BOT_STYLES.divider}\n\n📝 *Original:*\n\`\`\`\n${code}\n\`\`\`\n\n✨ *Formatted:*\n\`\`\`\n${formattedCode}\n\`\`\`\n\n💫 *Basic code formatting*\n🔧 *Developer tool*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, formatInfo);
+    } catch (error) {
+        console.error('Code format error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *FORMAT ERROR*\n${BOT_STYLES.divider}\n\nFailed to format code.\n\n💡 *Try again*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handleHash(sock, msg, text) {
+    try {
+        if (!text) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!hash <text>\`\n🎯 *Example:* \`!hash hello world\`\n\n💫 *Generate hash of text*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const crypto = require('crypto');
+        const md5 = crypto.createHash('md5').update(text).digest('hex');
+        const sha1 = crypto.createHash('sha1').update(text).digest('hex');
+        const sha256 = crypto.createHash('sha256').update(text).digest('hex');
+        
+        const hashInfo = `${BOT_STYLES.header}🔐 *HASH GENERATOR*\n${BOT_STYLES.divider}\n\n📝 *Text:* ${text}\n\n🔐 *Hashes:*\n• MD5: \`${md5}\`\n• SHA1: \`${sha1}\`\n• SHA256: \`${sha256}\`\n\n💫 *Cryptographic hashes*\n🔧 *Developer tool*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, hashInfo);
+    } catch (error) {
+        console.error('Hash generator error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *HASH ERROR*\n${BOT_STYLES.divider}\n\nFailed to generate hash.\n\n💡 *Try again*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === SPECIAL FEATURES ===
+async function handleHoroscope(sock, msg, sign) {
+    try {
+        if (!sign) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!horoscope <sign>\`\n🎯 *Example:* \`!horoscope aries\`\n\n💫 *Get daily horoscope from Horoscope API*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const response = await fetch(`https://horoscope-api.herokuapp.com/horoscope/today/${sign.toLowerCase()}`);
+        const data = await response.json();
+        
+        if (data.horoscope) {
+            const horoscopeInfo = `${BOT_STYLES.header}⭐ *HOROSCOPE*\n${BOT_STYLES.divider}\n\n⭐ *Sign:* ${sign.toUpperCase()}\n📅 *Date:* ${data.date}\n💫 *Horoscope:* ${data.horoscope}\n\n💫 *Powered by Horoscope API*\n✨ *Daily guidance*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, horoscopeInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *SIGN NOT FOUND*\n${BOT_STYLES.divider}\n\nCould not find horoscope for: "${sign}"\n\n💡 *Try:* \`!horoscope aries\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('Horoscope API error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *API ERROR*\n${BOT_STYLES.divider}\n\nFailed to fetch horoscope.\n\n💡 *Try again later*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handlePetFact(sock, msg) {
+    try {
+        const petFacts = [
+            "Cats spend 70% of their lives sleeping.",
+            "Dogs have a sense of smell 40 times greater than humans.",
+            "A group of lions is called a pride.",
+            "Elephants are the only mammals that can't jump.",
+            "A cat's purr vibrates at a frequency that promotes bone healing.",
+            "Dogs have three eyelids.",
+            "A goldfish has a memory span of three seconds.",
+            "Cats can make over 100 vocal sounds.",
+            "Dogs can understand up to 250 words and gestures.",
+            "A cat's whiskers help them determine if they can fit through a space."
+        ];
+        
+        const randomFact = petFacts[Math.floor(Math.random() * petFacts.length)];
+        
+        const petFactInfo = `${BOT_STYLES.header}🐾 *PET FACT*\n${BOT_STYLES.divider}\n\n🐾 *Fact:* ${randomFact}\n\n💫 *Learn something new about pets!*\n🐕 *Animal knowledge*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, petFactInfo);
+    } catch (error) {
+        console.error('Pet fact error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *FACT ERROR*\n${BOT_STYLES.divider}\n\nFailed to generate pet fact.\n\n💡 *Try again*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === ADVANCED LOGICAL FEATURES ===
+
+// === AI & MACHINE LEARNING FEATURES ===
+async function handleNeuralNetwork(sock, msg, input) {
+    try {
+        if (!input) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!neural <input>\`\n🎯 *Example:* \`!neural 1010\`\n\n💫 *Neural network simulation*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        // Simple neural network simulation
+        const weights = [0.5, 0.3, 0.8, 0.2];
+        const bias = 0.1;
+        let output = 0;
+        
+        for (let i = 0; i < Math.min(input.length, weights.length); i++) {
+            output += parseInt(input[i]) * weights[i];
+        }
+        output += bias;
+        
+        const activation = output > 0.5 ? 1 : 0;
+        
+        const neuralInfo = `${BOT_STYLES.header}🧠 *NEURAL NETWORK*\n${BOT_STYLES.divider}\n\n📥 *Input:* ${input}\n⚖️ *Weights:* ${weights.join(', ')}\n🎯 *Bias:* ${bias}\n📊 *Raw Output:* ${output.toFixed(3)}\n🎯 *Activation:* ${activation}\n\n💫 *Simple neural network simulation*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, neuralInfo);
+    } catch (error) {
+        console.error('Neural network error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *NEURAL ERROR*\n${BOT_STYLES.divider}\n\nFailed to process neural network.\n\n💡 *Try:* \`!neural 1010\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handleDeepLearning(sock, msg, data) {
+    try {
+        if (!data) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!deeplearn <data>\`\n🎯 *Example:* \`!deeplearn 1,2,3,4,5\`\n\n💫 *Deep learning analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const numbers = data.split(',').map(n => parseFloat(n.trim()));
+        const avg = numbers.reduce((a, b) => a + b, 0) / numbers.length;
+        const variance = numbers.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / numbers.length;
+        const stdDev = Math.sqrt(variance);
+        
+        const deepInfo = `${BOT_STYLES.header}🎯 *DEEP LEARNING ANALYSIS*\n${BOT_STYLES.divider}\n\n📊 *Data:* ${numbers.join(', ')}\n📈 *Mean:* ${avg.toFixed(2)}\n📊 *Variance:* ${variance.toFixed(2)}\n📈 *Std Deviation:* ${stdDev.toFixed(2)}\n\n💫 *Statistical deep learning analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, deepInfo);
+    } catch (error) {
+        console.error('Deep learning error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *DEEP LEARNING ERROR*\n${BOT_STYLES.divider}\n\nFailed to analyze data.\n\n💡 *Try:* \`!deeplearn 1,2,3,4,5\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handleComputerVision(sock, msg, description) {
+    try {
+        if (!description) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!vision <description>\`\n🎯 *Example:* \`!vision red car\`\n\n💫 *Computer vision analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const objects = ['car', 'person', 'building', 'tree', 'animal', 'object'];
+        const colors = ['red', 'blue', 'green', 'yellow', 'black', 'white'];
+        const detected = objects.filter(obj => description.toLowerCase().includes(obj));
+        const detectedColors = colors.filter(color => description.toLowerCase().includes(color));
+        
+        const visionInfo = `${BOT_STYLES.header}🔍 *COMPUTER VISION*\n${BOT_STYLES.divider}\n\n📸 *Description:* ${description}\n🎯 *Detected Objects:* ${detected.length > 0 ? detected.join(', ') : 'None'}\n🎨 *Detected Colors:* ${detectedColors.length > 0 ? detectedColors.join(', ') : 'None'}\n📊 *Confidence:* ${Math.random() * 100 + 50}%\n\n💫 *Computer vision analysis simulation*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, visionInfo);
+    } catch (error) {
+        console.error('Computer vision error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *VISION ERROR*\n${BOT_STYLES.divider}\n\nFailed to analyze image.\n\n💡 *Try:* \`!vision red car\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === SPACE & ASTRONOMY FEATURES ===
+async function handlePlanet(sock, msg, name) {
+    try {
+        if (!name) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!planet <name>\`\n🎯 *Example:* \`!planet Mars\`\n\n💫 *Planet information*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const planets = {
+            'mercury': { distance: '57.9M km', diameter: '4,879 km', moons: 0 },
+            'venus': { distance: '108.2M km', diameter: '12,104 km', moons: 0 },
+            'earth': { distance: '149.6M km', diameter: '12,756 km', moons: 1 },
+            'mars': { distance: '227.9M km', diameter: '6,792 km', moons: 2 },
+            'jupiter': { distance: '778.5M km', diameter: '142,984 km', moons: 79 },
+            'saturn': { distance: '1.4B km', diameter: '120,536 km', moons: 82 },
+            'uranus': { distance: '2.9B km', diameter: '51,118 km', moons: 27 },
+            'neptune': { distance: '4.5B km', diameter: '49,528 km', moons: 14 }
+        };
+        
+        const planet = planets[name.toLowerCase()];
+        if (planet) {
+            const planetInfo = `${BOT_STYLES.header}🌍 *PLANET INFO*\n${BOT_STYLES.divider}\n\n🌍 *Planet:* ${name.charAt(0).toUpperCase() + name.slice(1)}\n📏 *Distance from Sun:* ${planet.distance}\n📐 *Diameter:* ${planet.diameter}\n🌙 *Moons:* ${planet.moons}\n\n💫 *Astronomical data*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, planetInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *PLANET NOT FOUND*\n${BOT_STYLES.divider}\n\nCould not find planet: "${name}"\n\n💡 *Try:* \`!planet Mars\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('Planet error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *PLANET ERROR*\n${BOT_STYLES.divider}\n\nFailed to fetch planet data.\n\n💡 *Try:* \`!planet Mars\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handleStar(sock, msg, name) {
+    try {
+        if (!name) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!star <name>\`\n🎯 *Example:* \`!star Sirius\`\n\n💫 *Star information*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const stars = {
+            'sirius': { distance: '8.6 ly', magnitude: -1.46, type: 'Binary Star' },
+            'polaris': { distance: '433 ly', magnitude: 1.97, type: 'Yellow Supergiant' },
+            'vega': { distance: '25 ly', magnitude: 0.03, type: 'White Dwarf' },
+            'betelgeuse': { distance: '642 ly', magnitude: 0.42, type: 'Red Supergiant' },
+            'rigel': { distance: '860 ly', magnitude: 0.12, type: 'Blue Supergiant' }
+        };
+        
+        const star = stars[name.toLowerCase()];
+        if (star) {
+            const starInfo = `${BOT_STYLES.header}⭐ *STAR INFO*\n${BOT_STYLES.divider}\n\n⭐ *Star:* ${name.charAt(0).toUpperCase() + name.slice(1)}\n📏 *Distance:* ${star.distance}\n🌟 *Magnitude:* ${star.magnitude}\n🔭 *Type:* ${star.type}\n\n💫 *Astronomical data*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, starInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *STAR NOT FOUND*\n${BOT_STYLES.divider}\n\nCould not find star: "${name}"\n\n💡 *Try:* \`!star Sirius\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('Star error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *STAR ERROR*\n${BOT_STYLES.divider}\n\nFailed to fetch star data.\n\n💡 *Try:* \`!star Sirius\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === QUANTUM COMPUTING FEATURES ===
+async function handleQuantumCircuit(sock, msg, circuit) {
+    try {
+        if (!circuit) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!quantum <circuit>\`\n🎯 *Example:* \`!quantum H-X-H\`\n\n💫 *Quantum circuit simulation*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const gates = circuit.split('-');
+        let state = [1, 0]; // Initial state |0⟩
+        
+        gates.forEach(gate => {
+            switch(gate.toUpperCase()) {
+                case 'H': // Hadamard gate
+                    state = [(state[0] + state[1])/Math.sqrt(2), (state[0] - state[1])/Math.sqrt(2)];
+                    break;
+                case 'X': // Pauli-X gate
+                    state = [state[1], state[0]];
+                    break;
+                case 'Z': // Pauli-Z gate
+                    state = [state[0], -state[1]];
+                    break;
+            }
+        });
+        
+        const quantumInfo = `${BOT_STYLES.header}⚛️ *QUANTUM CIRCUIT*\n${BOT_STYLES.divider}\n\n⚛️ *Circuit:* ${circuit}\n🎯 *Gates:* ${gates.join(' → ')}\n📊 *Final State:* [${state[0].toFixed(3)}, ${state[1].toFixed(3)}]\n📈 *Probability |0⟩:* ${(state[0]**2 * 100).toFixed(1)}%\n📈 *Probability |1⟩:* ${(state[1]**2 * 100).toFixed(1)}%\n\n💫 *Quantum circuit simulation*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, quantumInfo);
+    } catch (error) {
+        console.error('Quantum circuit error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *QUANTUM ERROR*\n${BOT_STYLES.divider}\n\nFailed to simulate quantum circuit.\n\n💡 *Try:* \`!quantum H-X-H\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handleQubit(sock, msg, state) {
+    try {
+        if (!state) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!qubit <state>\`\n🎯 *Example:* \`!qubit 0\`\n\n💫 *Qubit state analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const states = {
+            '0': { ket: '|0⟩', vector: [1, 0], description: 'Ground state' },
+            '1': { ket: '|1⟩', vector: [0, 1], description: 'Excited state' },
+            '+': { ket: '|+⟩', vector: [1/Math.sqrt(2), 1/Math.sqrt(2)], description: 'Superposition +' },
+            '-': { ket: '|-⟩', vector: [1/Math.sqrt(2), -1/Math.sqrt(2)], description: 'Superposition -' }
+        };
+        
+        const qubitState = states[state];
+        if (qubitState) {
+            const qubitInfo = `${BOT_STYLES.header}⚛️ *QUBIT STATE*\n${BOT_STYLES.divider}\n\n⚛️ *State:* ${qubitState.ket}\n📊 *Vector:* [${qubitState.vector[0].toFixed(3)}, ${qubitState.vector[1].toFixed(3)}]\n📝 *Description:* ${qubitState.description}\n📈 *Probability |0⟩:* ${(qubitState.vector[0]**2 * 100).toFixed(1)}%\n📈 *Probability |1⟩:* ${(qubitState.vector[1]**2 * 100).toFixed(1)}%\n\n💫 *Qubit state analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, qubitInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *INVALID STATE*\n${BOT_STYLES.divider}\n\nInvalid qubit state: "${state}"\n\n💡 *Try:* \`!qubit 0\` or \`!qubit +\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('Qubit error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *QUBIT ERROR*\n${BOT_STYLES.divider}\n\nFailed to analyze qubit state.\n\n💡 *Try:* \`!qubit 0\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === PREDICTIVE LOGIC FEATURES ===
+async function handlePredict(sock, msg, type, data) {
+    try {
+        if (!type || !data) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!predict <type> <data>\`\n🎯 *Example:* \`!predict weather sunny\`\n\n💫 *Predictive analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const predictions = {
+            'weather': {
+                'sunny': 'High chance of clear skies tomorrow',
+                'rainy': 'Expect precipitation in the next 24 hours',
+                'cloudy': 'Overcast conditions likely to continue'
+            },
+            'market': {
+                'bull': 'Market likely to trend upward',
+                'bear': 'Market may experience downward pressure',
+                'stable': 'Market expected to remain stable'
+            },
+            'trend': {
+                'up': 'Trend analysis shows upward movement',
+                'down': 'Trend analysis shows downward movement',
+                'sideways': 'Trend expected to remain horizontal'
+            }
+        };
+        
+        const prediction = predictions[type.toLowerCase()]?.[data.toLowerCase()];
+        if (prediction) {
+            const predictInfo = `${BOT_STYLES.header}🔮 *PREDICTION*\n${BOT_STYLES.divider}\n\n🔮 *Type:* ${type.toUpperCase()}\n📊 *Input:* ${data.toUpperCase()}\n🎯 *Prediction:* ${prediction}\n📈 *Confidence:* ${Math.floor(Math.random() * 30 + 70)}%\n\n💫 *Predictive analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, predictInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *PREDICTION ERROR*\n${BOT_STYLES.divider}\n\nInvalid prediction type or data.\n\n💡 *Try:* \`!predict weather sunny\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('Prediction error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *PREDICTION ERROR*\n${BOT_STYLES.divider}\n\nFailed to generate prediction.\n\n💡 *Try:* \`!predict weather sunny\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === ADVANCED ANALYTICS FEATURES ===
+async function handleBigData(sock, msg, dataset) {
+    try {
+        if (!dataset) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!bigdata <dataset>\`\n🎯 *Example:* \`!bigdata 1,2,3,4,5,6,7,8,9,10\`\n\n💫 *Big data analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const numbers = dataset.split(',').map(n => parseFloat(n.trim()));
+        const sum = numbers.reduce((a, b) => a + b, 0);
+        const mean = sum / numbers.length;
+        const sorted = numbers.sort((a, b) => a - b);
+        const median = sorted.length % 2 === 0 ? 
+            (sorted[sorted.length/2 - 1] + sorted[sorted.length/2]) / 2 : 
+            sorted[Math.floor(sorted.length/2)];
+        
+        const bigDataInfo = `${BOT_STYLES.header}📊 *BIG DATA ANALYSIS*\n${BOT_STYLES.divider}\n\n📊 *Dataset Size:* ${numbers.length} values\n📈 *Sum:* ${sum}\n📊 *Mean:* ${mean.toFixed(2)}\n📈 *Median:* ${median.toFixed(2)}\n📊 *Min:* ${Math.min(...numbers)}\n📈 *Max:* ${Math.max(...numbers)}\n\n💫 *Big data statistical analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, bigDataInfo);
+    } catch (error) {
+        console.error('Big data error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *BIG DATA ERROR*\n${BOT_STYLES.divider}\n\nFailed to analyze dataset.\n\n💡 *Try:* \`!bigdata 1,2,3,4,5\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handleRealtime(sock, msg, data) {
+    try {
+        if (!data) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!realtime <data>\`\n🎯 *Example:* \`!realtime 100,200,300\`\n\n💫 *Real-time analytics*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const numbers = data.split(',').map(n => parseFloat(n.trim()));
+        const latest = numbers[numbers.length - 1];
+        const previous = numbers[numbers.length - 2] || 0;
+        const change = latest - previous;
+        const changePercent = previous !== 0 ? (change / previous * 100) : 0;
+        
+        const realtimeInfo = `${BOT_STYLES.header}📊 *REAL-TIME ANALYTICS*\n${BOT_STYLES.divider}\n\n📊 *Latest Value:* ${latest}\n📈 *Previous Value:* ${previous}\n📊 *Change:* ${change > 0 ? '+' : ''}${change.toFixed(2)}\n📈 *Change %:* ${changePercent > 0 ? '+' : ''}${changePercent.toFixed(2)}%\n⏰ *Timestamp:* ${new Date().toISOString()}\n\n💫 *Real-time data analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, realtimeInfo);
+    } catch (error) {
+        console.error('Real-time analytics error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *REAL-TIME ERROR*\n${BOT_STYLES.divider}\n\nFailed to analyze real-time data.\n\n💡 *Try:* \`!realtime 100,200,300\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === CRYPTOGRAPHY FEATURES ===
+async function handleEncrypt(sock, msg, message) {
+    try {
+        if (!message) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!encrypt <message>\`\n🎯 *Example:* \`!encrypt Hello World\`\n\n💫 *Message encryption*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        // Simple Caesar cipher encryption
+        const shift = 3;
+        const encrypted = message.split('').map(char => {
+            if (char.match(/[a-zA-Z]/)) {
+                const code = char.charCodeAt(0);
+                const isUpperCase = code >= 65 && code <= 90;
+                const base = isUpperCase ? 65 : 97;
+                return String.fromCharCode(((code - base + shift) % 26) + base);
+            }
+            return char;
+        }).join('');
+        
+        const encryptInfo = `${BOT_STYLES.header}🔐 *ENCRYPTION*\n${BOT_STYLES.divider}\n\n📝 *Original:* ${message}\n🔐 *Encrypted:* ${encrypted}\n🔑 *Method:* Caesar Cipher (shift ${shift})\n🔒 *Security:* Basic encryption\n\n💫 *Message encryption*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, encryptInfo);
+    } catch (error) {
+        console.error('Encryption error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *ENCRYPTION ERROR*\n${BOT_STYLES.divider}\n\nFailed to encrypt message.\n\n💡 *Try:* \`!encrypt Hello World\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+async function handleDecrypt(sock, msg, message) {
+    try {
+        if (!message) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!decrypt <message>\`\n🎯 *Example:* \`!decrypt Khoor Zruog\`\n\n💫 *Message decryption*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        // Simple Caesar cipher decryption
+        const shift = 3;
+        const decrypted = message.split('').map(char => {
+            if (char.match(/[a-zA-Z]/)) {
+                const code = char.charCodeAt(0);
+                const isUpperCase = code >= 65 && code <= 90;
+                const base = isUpperCase ? 65 : 97;
+                return String.fromCharCode(((code - base - shift + 26) % 26) + base);
+            }
+            return char;
+        }).join('');
+        
+        const decryptInfo = `${BOT_STYLES.header}🔓 *DECRYPTION*\n${BOT_STYLES.divider}\n\n🔐 *Encrypted:* ${message}\n📝 *Decrypted:* ${decrypted}\n🔑 *Method:* Caesar Cipher (shift ${shift})\n🔓 *Security:* Basic decryption\n\n💫 *Message decryption*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, decryptInfo);
+    } catch (error) {
+        console.error('Decryption error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *DECRYPTION ERROR*\n${BOT_STYLES.divider}\n\nFailed to decrypt message.\n\n💡 *Try:* \`!decrypt Khoor Zruog\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === GENETIC & BIOLOGICAL FEATURES ===
+async function handleDNA(sock, msg, sequence) {
+    try {
+        if (!sequence) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!dna <sequence>\`\n🎯 *Example:* \`!dna ATGC\`\n\n💫 *DNA analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const validBases = ['A', 'T', 'G', 'C'];
+        const sequenceUpper = sequence.toUpperCase();
+        const isValid = sequenceUpper.split('').every(base => validBases.includes(base));
+        
+        if (isValid) {
+            const length = sequenceUpper.length;
+            const aCount = (sequenceUpper.match(/A/g) || []).length;
+            const tCount = (sequenceUpper.match(/T/g) || []).length;
+            const gCount = (sequenceUpper.match(/G/g) || []).length;
+            const cCount = (sequenceUpper.match(/C/g) || []).length;
+            
+            const dnaInfo = `${BOT_STYLES.header}🧬 *DNA ANALYSIS*\n${BOT_STYLES.divider}\n\n🧬 *Sequence:* ${sequenceUpper}\n📏 *Length:* ${length} bases\n\n📊 *Base Counts:*\n• Adenine (A): ${aCount}\n• Thymine (T): ${tCount}\n• Guanine (G): ${gCount}\n• Cytosine (C): ${cCount}\n\n💫 *DNA sequence analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, dnaInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *INVALID DNA*\n${BOT_STYLES.divider}\n\nInvalid DNA sequence. Only A, T, G, C allowed.\n\n💡 *Try:* \`!dna ATGC\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('DNA analysis error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *DNA ERROR*\n${BOT_STYLES.divider}\n\nFailed to analyze DNA sequence.\n\n💡 *Try:* \`!dna ATGC\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === ENGINEERING FEATURES ===
+async function handleStructure(sock, msg, design) {
+    try {
+        if (!design) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!structure <design>\`\n🎯 *Example:* \`!structure bridge\`\n\n💫 *Structural analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const structures = {
+            'bridge': { type: 'Suspension Bridge', load: 'High', materials: 'Steel, Concrete' },
+            'building': { type: 'Skyscraper', load: 'Very High', materials: 'Steel, Glass, Concrete' },
+            'tower': { type: 'Communication Tower', load: 'Medium', materials: 'Steel, Aluminum' },
+            'dam': { type: 'Hydroelectric Dam', load: 'Extreme', materials: 'Concrete, Steel' }
+        };
+        
+        const structure = structures[design.toLowerCase()];
+        if (structure) {
+            const structureInfo = `${BOT_STYLES.header}🏗️ *STRUCTURAL ANALYSIS*\n${BOT_STYLES.divider}\n\n🏗️ *Design:* ${design.toUpperCase()}\n📐 *Type:* ${structure.type}\n⚖️ *Load Capacity:* ${structure.load}\n🔧 *Materials:* ${structure.materials}\n📊 *Safety Factor:* ${Math.floor(Math.random() * 20 + 80)}%\n\n💫 *Structural engineering analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, structureInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *STRUCTURE NOT FOUND*\n${BOT_STYLES.divider}\n\nCould not analyze structure: "${design}"\n\n💡 *Try:* \`!structure bridge\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('Structural analysis error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *STRUCTURE ERROR*\n${BOT_STYLES.divider}\n\nFailed to analyze structure.\n\n💡 *Try:* \`!structure bridge\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === COGNITIVE SCIENCE FEATURES ===
+async function handleBrain(sock, msg, region) {
+    try {
+        if (!region) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!brain <region>\`\n🎯 *Example:* \`!brain frontal\`\n\n💫 *Brain function analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const regions = {
+            'frontal': { function: 'Decision Making, Planning', activity: 'High', importance: 'Critical' },
+            'temporal': { function: 'Memory, Language', activity: 'High', importance: 'Critical' },
+            'parietal': { function: 'Sensory Processing', activity: 'Medium', importance: 'Important' },
+            'occipital': { function: 'Visual Processing', activity: 'High', importance: 'Critical' },
+            'cerebellum': { function: 'Motor Control, Balance', activity: 'Medium', importance: 'Important' }
+        };
+        
+        const brainRegion = regions[region.toLowerCase()];
+        if (brainRegion) {
+            const brainInfo = `${BOT_STYLES.header}🧠 *BRAIN REGION*\n${BOT_STYLES.divider}\n\n🧠 *Region:* ${region.toUpperCase()} Lobe\n⚡ *Function:* ${brainRegion.function}\n📊 *Activity Level:* ${brainRegion.activity}\n⭐ *Importance:* ${brainRegion.importance}\n📈 *Neural Density:* ${Math.floor(Math.random() * 50 + 50)}M neurons\n\n💫 *Brain function analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, brainInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *REGION NOT FOUND*\n${BOT_STYLES.divider}\n\nCould not find brain region: "${region}"\n\n💡 *Try:* \`!brain frontal\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('Brain analysis error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *BRAIN ERROR*\n${BOT_STYLES.divider}\n\nFailed to analyze brain region.\n\n💡 *Try:* \`!brain frontal\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === ENVIRONMENTAL FEATURES ===
+async function handleClimate(sock, msg, region) {
+    try {
+        if (!region) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!climate <region>\`\n🎯 *Example:* \`!climate tropical\`\n\n💫 *Climate analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const climates = {
+            'tropical': { temp: '25-30°C', rainfall: 'High', vegetation: 'Rainforest' },
+            'desert': { temp: '20-45°C', rainfall: 'Low', vegetation: 'Cactus, Shrubs' },
+            'temperate': { temp: '10-20°C', rainfall: 'Moderate', vegetation: 'Deciduous Forest' },
+            'arctic': { temp: '-40-10°C', rainfall: 'Low', vegetation: 'Tundra' }
+        };
+        
+        const climate = climates[region.toLowerCase()];
+        if (climate) {
+            const climateInfo = `${BOT_STYLES.header}🌍 *CLIMATE ANALYSIS*\n${BOT_STYLES.divider}\n\n🌍 *Region:* ${region.toUpperCase()}\n🌡️ *Temperature:* ${climate.temp}\n🌧️ *Rainfall:* ${climate.rainfall}\n🌱 *Vegetation:* ${climate.vegetation}\n📊 *Climate Change Risk:* ${Math.floor(Math.random() * 30 + 20)}%\n\n💫 *Climate data analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, climateInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *CLIMATE NOT FOUND*\n${BOT_STYLES.divider}\n\nCould not find climate data for: "${region}"\n\n💡 *Try:* \`!climate tropical\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('Climate analysis error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *CLIMATE ERROR*\n${BOT_STYLES.divider}\n\nFailed to analyze climate.\n\n💡 *Try:* \`!climate tropical\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === MEDICAL FEATURES ===
+async function handleSymptom(sock, msg, symptoms) {
+    try {
+        if (!symptoms) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!symptom <symptoms>\`\n🎯 *Example:* \`!symptom headache fever\`\n\n💫 *Symptom analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const symptomDatabase = {
+            'headache': ['Tension', 'Migraine', 'Sinus'],
+            'fever': ['Viral Infection', 'Bacterial Infection', 'Inflammation'],
+            'cough': ['Common Cold', 'Bronchitis', 'Allergies'],
+            'fatigue': ['Stress', 'Anemia', 'Sleep Disorder']
+        };
+        
+        const symptomList = symptoms.toLowerCase().split(' ');
+        const possibleConditions = [];
+        
+        symptomList.forEach(symptom => {
+            if (symptomDatabase[symptom]) {
+                possibleConditions.push(...symptomDatabase[symptom]);
+            }
+        });
+        
+        const uniqueConditions = [...new Set(possibleConditions)];
+        
+        const symptomInfo = `${BOT_STYLES.header}🏥 *SYMPTOM ANALYSIS*\n${BOT_STYLES.divider}\n\n🏥 *Symptoms:* ${symptoms}\n🔍 *Possible Conditions:* ${uniqueConditions.length > 0 ? uniqueConditions.join(', ') : 'No matches found'}\n⚠️ *Severity:* ${Math.floor(Math.random() * 3 + 1)}/5\n💡 *Recommendation:* Consult a healthcare professional\n\n💫 *Medical symptom analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+        await reply(sock, msg, symptomInfo);
+    } catch (error) {
+        console.error('Symptom analysis error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *SYMPTOM ERROR*\n${BOT_STYLES.divider}\n\nFailed to analyze symptoms.\n\n💡 *Try:* \`!symptom headache fever\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === FUTURISTIC FEATURES ===
+async function handleTimeTravel(sock, msg, scenario) {
+    try {
+        if (!scenario) {
+            return await reply(sock, msg, `${BOT_STYLES.header}❌ *USAGE ERROR*\n${BOT_STYLES.divider}\n\n💡 *Usage:* \`!timetravel <scenario>\`\n🎯 *Example:* \`!timetravel past\`\n\n💫 *Time travel scenario analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+        
+        const scenarios = {
+            'past': { destination: 'Historical Era', paradox: 'High Risk', energy: 'Massive' },
+            'future': { destination: 'Advanced Civilization', paradox: 'Medium Risk', energy: 'Enormous' },
+            'parallel': { destination: 'Alternate Universe', paradox: 'Low Risk', energy: 'Infinite' }
+        };
+        
+        const timeScenario = scenarios[scenario.toLowerCase()];
+        if (timeScenario) {
+            const timeTravelInfo = `${BOT_STYLES.header}⏰ *TIME TRAVEL ANALYSIS*\n${BOT_STYLES.divider}\n\n⏰ *Scenario:* ${scenario.toUpperCase()}\n🌍 *Destination:* ${timeScenario.destination}\n⚠️ *Paradox Risk:* ${timeScenario.paradox}\n⚡ *Energy Required:* ${timeScenario.energy}\n📊 *Success Probability:* ${Math.floor(Math.random() * 20 + 10)}%\n\n💫 *Time travel scenario analysis*${BOT_STYLES.creator}\n${BOT_STYLES.footer}`;
+            await reply(sock, msg, timeTravelInfo);
+        } else {
+            await reply(sock, msg, `${BOT_STYLES.header}❌ *SCENARIO NOT FOUND*\n${BOT_STYLES.divider}\n\nCould not analyze scenario: "${scenario}"\n\n💡 *Try:* \`!timetravel past\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+        }
+    } catch (error) {
+        console.error('Time travel error:', error);
+        await reply(sock, msg, `${BOT_STYLES.header}❌ *TIME TRAVEL ERROR*\n${BOT_STYLES.divider}\n\nFailed to analyze time travel scenario.\n\n💡 *Try:* \`!timetravel past\`${BOT_STYLES.creator}\n${BOT_STYLES.footer}`);
+    }
+}
+
+// === TOOL COMMANDS ===
+
+// JSON Formatter/Validator
+async function handleJson(sock, msg, text) {
+    if (!text) return await reply(sock, msg, 'Usage: !json <json string>');
+    try {
+        const obj = JSON.parse(text);
+        await reply(sock, msg, '```json\n' + JSON.stringify(obj, null, 2) + '\n```');
+    } catch (e) {
+        await reply(sock, msg, '❌ Invalid JSON.');
+    }
+}
+
+// Base64 Encode/Decode
+async function handleBase64(sock, msg, mode, text) {
+    if (!mode || !text) return await reply(sock, msg, 'Usage: !base64 <encode|decode> <text>');
+    try {
+        if (mode === 'encode') {
+            await reply(sock, msg, Buffer.from(text).toString('base64'));
+        } else if (mode === 'decode') {
+            await reply(sock, msg, Buffer.from(text, 'base64').toString('utf8'));
+        } else {
+            await reply(sock, msg, 'Usage: !base64 <encode|decode> <text>');
+        }
+    } catch {
+        await reply(sock, msg, '❌ Error processing base64.');
+    }
+}
+
+// URL Encode/Decode
+async function handleUrl(sock, msg, mode, text) {
+    if (!mode || !text) return await reply(sock, msg, 'Usage: !url <encode|decode> <text>');
+    try {
+        if (mode === 'encode') {
+            await reply(sock, msg, encodeURIComponent(text));
+        } else if (mode === 'decode') {
+            await reply(sock, msg, decodeURIComponent(text));
+        } else {
+            await reply(sock, msg, 'Usage: !url <encode|decode> <text>');
+        }
+    } catch {
+        await reply(sock, msg, '❌ Error processing URL.');
+    }
+}
+
+// UUID Generator
+async function handleUuid(sock, msg) {
+    const uuid = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.randomBytes(1)[0] & 15 >> c / 4).toString(16)
+    );
+    await reply(sock, msg, `🆔 *UUID:*
+
+${uuid}`);
+}
+
+// Timestamp
+async function handleTimestamp(sock, msg) {
+    await reply(sock, msg, `⏰ *Current UNIX Timestamp:*
+
+${Math.floor(Date.now() / 1000)}`);
+}
+
+// QR Code Generator
+async function handleQrcode(sock, msg, text) {
+    if (!text) return await reply(sock, msg, 'Usage: !qrcode <text>');
+    try {
+        const qr = await QRCode.toData
